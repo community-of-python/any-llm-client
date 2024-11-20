@@ -1,0 +1,91 @@
+[project]
+name = "any-llm"
+description = "Add your description here" # TODO
+readme = "README.md"
+keywords = ["llm", "llm-client", "openai", "yandex", "yandexgpt"]
+classifiers = [
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: System :: Networking",
+    "Typing :: Typed",
+]
+authors = [{ name = "Lev Vereshchagin", email = "mail@vrslev.com" }]
+requires-python = ">=3.10"
+dependencies = [
+    "httpx-sse>=0.4.0",
+    "httpx>=0.27.2",
+    "pydantic>=2.9.2",
+    "stamina>=24.3.0",
+]
+dynamic = ["version"]
+
+[dependency-groups]
+dev = [
+    "mypy",
+    "polyfactory",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "anyio",
+    "faker",
+]
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+
+[tool.mypy]
+python_version = "3.10"
+warn_unused_ignores = true
+strict = true
+
+[tool.ruff]
+target-version = "py310"
+fix = true
+unsafe-fixes = true
+line-length = 120
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "EM",
+    "FBT",
+    "TRY003",
+    "D1",
+    "D203",
+    "D213",
+    "G004",
+    "FA",
+    "ANN101",
+    "ANN102",
+    "COM812",
+    "ISC001",
+]
+
+[tool.ruff.lint.isort]
+no-lines-before = ["standard-library", "local-folder"]
+known-third-party = []
+known-local-folder = []
+lines-after-imports = 2
+
+[tool.ruff.lint.extend-per-file-ignores]
+"tests/*.py" = ["S101", "S311"]
+
+[tool.pytest.ini_options]
+addopts = "--cov"
+
+[tool.coverage.report]
+skip_covered = true
+show_missing = true
+exclude_also = ["if TYPE_CHECKING:"]
