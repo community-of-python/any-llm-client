@@ -8,7 +8,6 @@ import pytest
 from polyfactory.factories.pydantic_factory import ModelFactory
 
 import any_llm
-from any_llm.abc import Message
 from any_llm.clients.openai import (
     ChatCompletionsMessage,
     ChatCompletionsNotStreamingResponse,
@@ -16,13 +15,11 @@ from any_llm.clients.openai import (
     OneNotStreamingChoice,
     OneStreamingChoice,
     OneStreamingChoiceDelta,
-    OpenAIClient,
 )
-from tests.conftest import consume_llm_partial_responses
-from tests.factories import LLMRequestFactory
+from tests.conftest import LLMFuncRequestFactory, consume_llm_partial_responses
 
 
-class OpenAILLMConfigFactory(ModelFactory[any_llm.OpenAIConfig]): ...
+class OpenAIConfigFactory(ModelFactory[any_llm.OpenAIConfig]): ...
 
 
 class TestOpenAIRequestLLMResponse:
@@ -38,9 +35,9 @@ class TestOpenAIRequestLLMResponse:
         )
 
         result: typing.Final = await any_llm.get_model(
-            OpenAILLMConfigFactory.build(),
+            OpenAIConfigFactory.build(),
             httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
-        ).request_llm_response(**LLMRequestFactory.build())
+        ).request_llm_response(**LLMFuncRequestFactory.build())
 
         assert result == expected_result
 
@@ -50,12 +47,12 @@ class TestOpenAIRequestLLMResponse:
             json=ChatCompletionsNotStreamingResponse.model_construct(choices=[]).model_dump(mode="json"),
         )
         client = any_llm.get_model(
-            OpenAILLMConfigFactory.build(),
+            OpenAIConfigFactory.build(),
             httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
         )
 
         with pytest.raises(pydantic.ValidationError):
-            await client.request_llm_response(**LLMRequestFactory.build())
+            await client.request_llm_response(**LLMFuncRequestFactory.build())
 
 
 class TestOpenAIRequestLLMPartialResponses:
@@ -79,8 +76,8 @@ class TestOpenAIRequestLLMPartialResponses:
             "Hi there. How is you",
             "Hi there. How is your day?",
         ]
-        config = OpenAILLMConfigFactory.build()
-        func_request = LLMRequestFactory.build()
+        config = OpenAIConfigFactory.build()
+        func_request = LLMFuncRequestFactory.build()
         response_content = (
             "\n\n".join(
                 "data: "
@@ -103,12 +100,12 @@ class TestOpenAIRequestLLMPartialResponses:
         response_content = f"data: {ChatCompletionsStreamingEvent.model_construct(choices=[]).model_dump_json()}\n\n"
         response = httpx.Response(200, headers={"Content-Type": "text/event-stream"}, content=response_content)
         client = any_llm.get_model(
-            OpenAILLMConfigFactory.build(),
+            OpenAIConfigFactory.build(),
             httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
         )
 
         with pytest.raises(pydantic.ValidationError):
-            await consume_llm_partial_responses(client.request_llm_partial_responses(**LLMRequestFactory.build()))
+            await consume_llm_partial_responses(client.request_llm_partial_responses(**LLMFuncRequestFactory.build()))
 
 
 class TestOpenAILLMErrors:
@@ -116,14 +113,14 @@ class TestOpenAILLMErrors:
     @pytest.mark.parametrize("status_code", [400, 500])
     async def test_fails_with_unknown_error(self, stream: bool, status_code: int) -> None:
         client = any_llm.get_model(
-            OpenAILLMConfigFactory.build(),
+            OpenAIConfigFactory.build(),
             httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: httpx.Response(status_code))),
         )
 
         coroutine = (
-            consume_llm_partial_responses(client.request_llm_partial_responses(**LLMRequestFactory.build()))
+            consume_llm_partial_responses(client.request_llm_partial_responses(**LLMFuncRequestFactory.build()))
             if stream
-            else client.request_llm_response(**LLMRequestFactory.build())
+            else client.request_llm_response(**LLMFuncRequestFactory.build())
         )
 
         with pytest.raises(any_llm.LLMError) as exc_info:
@@ -141,14 +138,14 @@ class TestOpenAILLMErrors:
     async def test_fails_with_out_of_tokens_error(self, stream: bool, content: bytes | None) -> None:
         response = httpx.Response(400, content=content)
         client = any_llm.get_model(
-            OpenAILLMConfigFactory.build(),
+            OpenAIConfigFactory.build(),
             httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
         )
 
         coroutine = (
-            consume_llm_partial_responses(client.request_llm_partial_responses(**LLMRequestFactory.build()))
+            consume_llm_partial_responses(client.request_llm_partial_responses(**LLMFuncRequestFactory.build()))
             if stream
-            else client.request_llm_response(**LLMRequestFactory.build())
+            else client.request_llm_response(**LLMFuncRequestFactory.build())
         )
 
         with pytest.raises(any_llm.OutOfTokensOrSymbolsError):
@@ -160,26 +157,32 @@ class TestOpenAIMessageAlternation:
         ("messages", "expected_result"),
         [
             ([], []),
-            ([Message(role="system", text="")], []),
-            ([Message(role="system", text=" ")], []),
-            ([Message(role="user", text="")], []),
-            ([Message(role="assistant", text="")], []),
-            ([Message(role="system", text=""), Message(role="user", text="")], []),
-            ([Message(role="system", text=""), Message(role="assistant", text="")], []),
+            ([any_llm.Message(role="system", text="")], []),
+            ([any_llm.Message(role="system", text=" ")], []),
+            ([any_llm.Message(role="user", text="")], []),
+            ([any_llm.Message(role="assistant", text="")], []),
+            ([any_llm.Message(role="system", text=""), any_llm.Message(role="user", text="")], []),
+            ([any_llm.Message(role="system", text=""), any_llm.Message(role="assistant", text="")], []),
             (
                 [
-                    Message(role="system", text=""),
-                    Message(role="user", text=""),
-                    Message(role="assistant", text=""),
-                    Message(role="assistant", text=""),
-                    Message(role="user", text=""),
-                    Message(role="assistant", text=""),
+                    any_llm.Message(role="system", text=""),
+                    any_llm.Message(role="user", text=""),
+                    any_llm.Message(role="assistant", text=""),
+                    any_llm.Message(role="assistant", text=""),
+                    any_llm.Message(role="user", text=""),
+                    any_llm.Message(role="assistant", text=""),
                 ],
                 [],
             ),
-            ([Message(role="system", text="Be nice")], [ChatCompletionsMessage(role="user", content="Be nice")]),
             (
-                [Message(role="user", text="Hi there"), Message(role="assistant", text="Hi! How can I help you?")],
+                [any_llm.Message(role="system", text="Be nice")],
+                [ChatCompletionsMessage(role="user", content="Be nice")],
+            ),
+            (
+                [
+                    any_llm.Message(role="user", text="Hi there"),
+                    any_llm.Message(role="assistant", text="Hi! How can I help you?"),
+                ],
                 [
                     ChatCompletionsMessage(role="user", content="Hi there"),
                     ChatCompletionsMessage(role="assistant", content="Hi! How can I help you?"),
@@ -187,9 +190,9 @@ class TestOpenAIMessageAlternation:
             ),
             (
                 [
-                    Message(role="system", text=""),
-                    Message(role="user", text="Hi there"),
-                    Message(role="assistant", text="Hi! How can I help you?"),
+                    any_llm.Message(role="system", text=""),
+                    any_llm.Message(role="user", text="Hi there"),
+                    any_llm.Message(role="assistant", text="Hi! How can I help you?"),
                 ],
                 [
                     ChatCompletionsMessage(role="user", content="Hi there"),
@@ -197,23 +200,23 @@ class TestOpenAIMessageAlternation:
                 ],
             ),
             (
-                [Message(role="system", text="Be nice"), Message(role="user", text="Hi there")],
+                [any_llm.Message(role="system", text="Be nice"), any_llm.Message(role="user", text="Hi there")],
                 [ChatCompletionsMessage(role="user", content="Be nice\n\nHi there")],
             ),
             (
                 [
-                    Message(role="system", text="Be nice"),
-                    Message(role="assistant", text="Hi!"),
-                    Message(role="assistant", text="I'm your answer to everything."),
-                    Message(role="assistant", text="How can I help you?"),
-                    Message(role="user", text="Hi there"),
-                    Message(role="user", text=""),
-                    Message(role="user", text="Why is the sky blue?"),
-                    Message(role="assistant", text=" "),
-                    Message(role="assistant", text="Well..."),
-                    Message(role="assistant", text=""),
-                    Message(role="assistant", text=" \n "),
-                    Message(role="user", text="Hmmm..."),
+                    any_llm.Message(role="system", text="Be nice"),
+                    any_llm.Message(role="assistant", text="Hi!"),
+                    any_llm.Message(role="assistant", text="I'm your answer to everything."),
+                    any_llm.Message(role="assistant", text="How can I help you?"),
+                    any_llm.Message(role="user", text="Hi there"),
+                    any_llm.Message(role="user", text=""),
+                    any_llm.Message(role="user", text="Why is the sky blue?"),
+                    any_llm.Message(role="assistant", text=" "),
+                    any_llm.Message(role="assistant", text="Well..."),
+                    any_llm.Message(role="assistant", text=""),
+                    any_llm.Message(role="assistant", text=" \n "),
+                    any_llm.Message(role="user", text="Hmmm..."),
                 ],
                 [
                     ChatCompletionsMessage(role="user", content="Be nice"),
@@ -228,19 +231,21 @@ class TestOpenAIMessageAlternation:
             ),
         ],
     )
-    def test_with_alternation(self, messages: list[Message], expected_result: list[ChatCompletionsMessage]) -> None:
-        client = OpenAIClient(
-            config=OpenAILLMConfigFactory.build(force_user_assistant_message_alternation=True), httpx_client=mock.Mock()
+    def test_with_alternation(
+        self, messages: list[any_llm.Message], expected_result: list[ChatCompletionsMessage]
+    ) -> None:
+        client = any_llm.OpenAIClient(
+            config=OpenAIConfigFactory.build(force_user_assistant_message_alternation=True), httpx_client=mock.Mock()
         )
         assert client._prepare_messages(messages) == expected_result  # noqa: SLF001
 
     def test_without_alternation(self) -> None:
-        client = OpenAIClient(
-            config=OpenAILLMConfigFactory.build(force_user_assistant_message_alternation=False),
+        client = any_llm.OpenAIClient(
+            config=OpenAIConfigFactory.build(force_user_assistant_message_alternation=False),
             httpx_client=mock.Mock(),
         )
         assert client._prepare_messages(  # noqa: SLF001
-            [Message(role="system", text="Be nice"), Message(role="user", text="Hi there")]
+            [any_llm.Message(role="system", text="Be nice"), any_llm.Message(role="user", text="Hi there")]
         ) == [
             ChatCompletionsMessage(role="system", content="Be nice"),
             ChatCompletionsMessage(role="user", content="Hi there"),

@@ -3,6 +3,9 @@ import typing
 
 import pytest
 import stamina
+from polyfactory.factories.typed_dict_factory import TypedDictFactory
+
+import any_llm
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -13,6 +16,14 @@ def anyio_backend() -> str:
 @pytest.fixture(scope="session", autouse=True)
 def _deactivate_retries() -> None:
     stamina.set_active(False)
+
+
+class LLMFuncRequest(typing.TypedDict):
+    messages: list[any_llm.Message]
+    temperature: float
+
+
+class LLMFuncRequestFactory(TypedDictFactory[LLMFuncRequest]): ...
 
 
 async def consume_llm_partial_responses(
