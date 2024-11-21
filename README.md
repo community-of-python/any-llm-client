@@ -1,11 +1,6 @@
 # any-llm-client
 
-Communicate with LLMs using unified and lightweight async Python API.
-
-Supported providers:
-- OpenAI Chat Completions API (and any OpenAI-compatible API, including Ollama and vLLM)
-- YandexGPT API.
-
+Unified and lightweight async Python API for communicating with LLMs. Supports multiple providers, including OpenAI Chat Completions API (and any OpenAI-compatible API, such as Ollama and vLLM) and YandexGPT API.
 
 ## How To Use
 
@@ -50,7 +45,7 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-Replace `config` to use YandexGPT:
+To use `YandexGPT`, replace the config:
 
 ```python
 config = any_llm_client.YandexGPTConfig(
@@ -99,13 +94,11 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-To use YandexGPT, replace `config` with an instance of `any_llm_client.YandexGPTConfig`.
-
 Note that this will yield partial growing message, not message chunks, for example: "Hi", "Hi there!", "Hi there! How can I help you?".
 
 ### Using clients directly
 
-The recommended way to get LLM client is to call `any_llm_client.get_client()`: this way you'd be able to easily swap LLM-models. If that's not for you, use `any_llm_client.OpenAIClient`, `any_llm_client.YandexGPTClient` directly:
+The recommended way to get LLM client is to call `any_llm_client.get_client()`. This way you can easily swap LLM models. If you prefer, you can use `any_llm_client.OpenAIClient` or `any_llm_client.YandexGPTClient` directly:
 
 ```python
 config = any_llm_client.OpenAIConfig(
@@ -118,7 +111,7 @@ llm_client = any_llm_client.OpenAIClient(config, httpx_client=...)
 
 ### Retries
 
-By default, requests are retried 3 times. You can change retry behaviour by supplying `request_retry` parameter:
+By default, requests are retried 3 times on HTTP status errors. You can change the retry behaviour by supplying `request_retry` parameter:
 
 ```python
 llm_client = any_llm_client.get_client(..., request_retry=any_llm_client.RequestRetryConfig(attempts=5, ...))
@@ -126,7 +119,7 @@ llm_client = any_llm_client.get_client(..., request_retry=any_llm_client.Request
 
 ### Mock client
 
-You can use mock client for testing:
+You can use a mock client for testing:
 
 ```python
 config = any_llm_client.MockLLMConfig(
@@ -161,4 +154,4 @@ client = any_llm_client.get_client(settings.llm_model, ...)
 
 ### Errors
 
-`any_llm_client.LLMClient.request_llm_response()` and `any_llm_client.LLMClient.stream_llm_partial_responses()` will raise `any_llm_client.LLMError` or `any_llm_client.OutOfTokensOrSymbolsError` when LLM API responded with failed HTTP status.
+`any_llm_client.LLMClient.request_llm_response()` and `any_llm_client.LLMClient.stream_llm_partial_responses()` will raise `any_llm_client.LLMError` or `any_llm_client.OutOfTokensOrSymbolsError` when the LLM API responds with a failed HTTP status.
