@@ -16,7 +16,10 @@ from any_llm_client.retry import RequestRetryConfig
 
 
 class OpenAIConfig(LLMConfig):
-    url: pydantic.HttpUrl
+    if typing.TYPE_CHECKING:
+        url: str
+    else:
+        url: pydantic.HttpUrl
     auth_token: str | None = None
     model_name: str
     force_user_assistant_message_alternation: bool = False
