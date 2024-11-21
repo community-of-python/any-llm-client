@@ -62,16 +62,20 @@ class YandexGPTClient(LLMClient):
 
     @stamina.retry(on=httpx.HTTPError, attempts=3)
     async def _make_request(self, *, payload: dict[str, typing.Any], stream: bool) -> httpx.Response:
-        model_request: typing.Final = self.httpx_client.build_request(
-            method="POST",
-            url=str(self.config.url),
-            json=payload,
-            headers={"Authorization": self.config.auth_header, "x-data-logging-enabled": "false"},
-            timeout=None,
-        )
-        response: typing.Final = await self.httpx_client.send(model_request, stream=stream)
-        response.raise_for_status()
-        return response
+        @stamina.retry(on=httpx.HTTPError, **dataclasses.asdict(self.request_retry))
+        async def _make_request_with_retries() -> httpx.Response:
+            model_request: typing.Final = self.httpx_client.build_request(
+                method="POST",
+                url=str(self.config.url),
+                json=payload,
+                headers={"Authorization": self.config.auth_header, "x-data-logging-enabled": "false"},
+                timeout=None,
+            )
+            response: typing.Final = await self.httpx_client.send(model_request, stream=stream)
+            response.raise_for_status()
+            return response
+
+        return await _make_request_with_retries()
 
     def _prepare_payload(self, *, messages: list[Message], temperature: float, stream: bool) -> dict[str, typing.Any]:
         return YandexGPTRequest(

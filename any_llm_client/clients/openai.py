@@ -93,15 +93,19 @@ class OpenAIClient(LLMClient):
 
     @stamina.retry(on=httpx.HTTPError, attempts=3)
     async def _make_request(self, *, payload: dict[str, typing.Any], stream: bool) -> httpx.Response:
-        request: typing.Final = self.httpx_client.build_request(
-            method="POST",
-            url=str(self.config.url),
-            json=payload,
-            headers={"Authorization": f"Bearer {self.config.auth_token}"} if self.config.auth_token else None,
-        )
-        response: typing.Final = await self.httpx_client.send(request, stream=stream)
-        response.raise_for_status()
-        return response
+        @stamina.retry(on=httpx.HTTPError, **dataclasses.asdict(self.request_retry))
+        async def _make_request_with_retries() -> httpx.Response:
+            request: typing.Final = self.httpx_client.build_request(
+                method="POST",
+                url=str(self.config.url),
+                json=payload,
+                headers={"Authorization": f"Bearer {self.config.auth_token}"} if self.config.auth_token else None,
+            )
+            response: typing.Final = await self.httpx_client.send(request, stream=stream)
+            response.raise_for_status()
+            return response
+
+        return await _make_request_with_retries()
 
     def _prepare_messages(self, messages: list[Message]) -> list[ChatCompletionsMessage]:
         initial_messages = (
