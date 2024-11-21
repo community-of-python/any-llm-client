@@ -1,3 +1,4 @@
+import typing
 import inspect
 
 import faker
@@ -7,9 +8,9 @@ import any_llm_client
 
 
 def test_request_retry_config_default_kwargs_match() -> None:
-    config_defaults = inspect.getfullargspec(any_llm_client.RequestRetryConfig).kwonlydefaults
+    config_defaults: typing.Final = inspect.getfullargspec(any_llm_client.RequestRetryConfig).kwonlydefaults
     assert config_defaults
-    stamina_defaults = inspect.getfullargspec(stamina.retry).kwonlydefaults
+    stamina_defaults: typing.Final = inspect.getfullargspec(stamina.retry).kwonlydefaults
     assert stamina_defaults
 
     for one_ignored_setting in ("attempts",):
@@ -20,5 +21,5 @@ def test_request_retry_config_default_kwargs_match() -> None:
 
 
 def test_llm_error_str(faker: faker.Faker) -> None:
-    response_content = faker.pystr().encode()
+    response_content: typing.Final = faker.pystr().encode()
     assert str(any_llm_client.LLMError(response_content=response_content)) == f"(response_content={response_content!r})"

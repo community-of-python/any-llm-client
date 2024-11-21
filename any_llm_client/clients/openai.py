@@ -100,7 +100,7 @@ class OpenAIClient(LLMClient):
         )
 
     def _prepare_messages(self, messages: list[Message]) -> list[ChatCompletionsMessage]:
-        initial_messages = (
+        initial_messages: typing.Final = (
             ChatCompletionsMessage(role=one_message.role, content=one_message.text) for one_message in messages
         )
         return (

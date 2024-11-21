@@ -36,7 +36,7 @@ async def make_streaming_http_request(
         response.raise_for_status()
         return response
 
-    response = await make_request_with_retries()
+    response: typing.Final = await make_request_with_retries()
     try:
         yield response
     finally:

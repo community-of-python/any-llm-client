@@ -26,6 +26,7 @@ dynamic = ["version"]
 [dependency-groups]
 dev = [
     "anyio",
+    "auto-typing-final",
     "faker",
     "mypy",
     "polyfactory",
