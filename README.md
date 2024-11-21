@@ -152,7 +152,7 @@ import any_llm_client
 
 async with any_llm_client.get_client(
     ...,
-    httpx_client=niquests.AsyncSession(
+    httpx_client=httpx.AsyncClient(
         mounts={"https://api.openai.com": httpx.AsyncHTTPTransport(proxy="http://localhost:8030")},
         timeout=httpx.Timeout(None, connect=5.0),
     ),

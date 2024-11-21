@@ -5,7 +5,7 @@ import typing
 from http import HTTPStatus
 
 import annotated_types
-import niquests
+import httpx
 import pydantic
 import typing_extensions
 
@@ -64,27 +64,25 @@ def _handle_status_error(*, status_code: int, content: bytes) -> typing.NoReturn
 @dataclasses.dataclass(slots=True, init=False)
 class YandexGPTClient(LLMClient):
     config: YandexGPTConfig
-    httpx_client: niquests.AsyncSession
+    httpx_client: httpx.AsyncClient
     request_retry: RequestRetryConfig
 
     def __init__(
         self,
         config: YandexGPTConfig,
-        httpx_client: niquests.AsyncSession | None = None,
+        httpx_client: httpx.AsyncClient | None = None,
         request_retry: RequestRetryConfig | None = None,
     ) -> None:
         self.config = config
-        self.httpx_client = httpx_client or niquests.AsyncSession()
+        self.httpx_client = httpx_client or httpx.AsyncClient()
         self.request_retry = request_retry or RequestRetryConfig()
 
-    def _build_request(self, payload: dict[str, typing.Any]) -> niquests.PreparedRequest:
-        return self.httpx_client.prepare_request(
-            niquests.Request(
-                method="POST",
-                url=str(self.config.url),
-                json=payload,
-                headers={"Authorization": self.config.auth_header, "x-data-logging-enabled": "false"},
-            )
+    def _build_request(self, payload: dict[str, typing.Any]) -> httpx.Request:
+        return self.httpx_client.build_request(
+            method="POST",
+            url=str(self.config.url),
+            json=payload,
+            headers={"Authorization": self.config.auth_header, "x-data-logging-enabled": "false"},
         )
 
     def _prepare_payload(
@@ -108,16 +106,13 @@ class YandexGPTClient(LLMClient):
                 request_retry=self.request_retry,
                 build_request=lambda: self._build_request(payload),
             )
-        except niquests.HTTPError as exception:
-            if exception.response and exception.response.status_code and exception.response.content:
-                _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
-            else:
-                raise
+        except httpx.HTTPStatusError as exception:
+            _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
 
-        return YandexGPTResponse.model_validate_json(response.content).result.alternatives[0].message.text  # type: ignore[arg-type]
+        return YandexGPTResponse.model_validate_json(response.content).result.alternatives[0].message.text
 
-    async def _iter_completion_messages(self, response: niquests.AsyncResponse) -> typing.AsyncIterable[str]:
-        async for one_line in response.iter_lines():
+    async def _iter_completion_messages(self, response: httpx.Response) -> typing.AsyncIterable[str]:
+        async for one_line in response.aiter_lines():
             validated_response = YandexGPTResponse.model_validate_json(one_line)
             yield validated_response.result.alternatives[0].message.text
 
@@ -134,14 +129,13 @@ class YandexGPTClient(LLMClient):
                 build_request=lambda: self._build_request(payload),
             ) as response:
                 yield self._iter_completion_messages(response)
-        except niquests.HTTPError as exception:
-            if exception.response and exception.response.status_code and exception.response.content:
-                content: typing.Final = exception.response.content
-                exception.response.close()
-                _handle_status_error(status_code=exception.response.status_code, content=content)
+        except httpx.HTTPStatusError as exception:
+            content: typing.Final = await exception.response.aread()
+            await exception.response.aclose()
+            _handle_status_error(status_code=exception.response.status_code, content=content)
 
     async def __aenter__(self) -> typing_extensions.Self:
-        await self.httpx_client.__aenter__()  # type: ignore[no-untyped-call]
+        await self.httpx_client.__aenter__()
         return self
 
     async def __aexit__(
@@ -150,4 +144,4 @@ class YandexGPTClient(LLMClient):
         exc_value: BaseException | None,
         traceback: types.TracebackType | None,
     ) -> None:
-        await self.httpx_client.__aexit__(exc_type, exc_value, traceback)  # type: ignore[no-untyped-call]
+        await self.httpx_client.__aexit__(exc_type=exc_type, exc_value=exc_value, traceback=traceback)
