@@ -32,7 +32,7 @@ config = any_llm_client.OpenAIConfig(
 
 async def main() -> None:
     async with httpx.AsyncClient() as httpx_client:
-        response = await any_llm_client.get_client(config, httpx_client=httpx_client).request_llm_response(
+        response = await any_llm_client.get_client(config, httpx_client=httpx_client).request_llm_message(
             messages=[
                 any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
                 any_llm_client.Message(role="user", text="Привет!"),
@@ -78,7 +78,7 @@ config = any_llm_client.OpenAIConfig(
 async def main() -> None:
     async with (
         httpx.AsyncClient() as httpx_client,
-        any_llm_client.get_client(config, httpx_client=httpx_client).stream_llm_partial_responses(
+        any_llm_client.get_client(config, httpx_client=httpx_client).stream_llm_partial_messages(
             messages=[
                 any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
                 any_llm_client.Message(role="user", text="Привет!"),
@@ -148,7 +148,7 @@ llm_client = any_llm_client.OpenAIClient(config, ...)
 
 #### Errors
 
-`any_llm_client.LLMClient.request_llm_response()` and `any_llm_client.LLMClient.stream_llm_partial_responses()` will raise `any_llm_client.LLMError` or `any_llm_client.OutOfTokensOrSymbolsError` when the LLM API responds with a failed HTTP status.
+`any_llm_client.LLMClient.request_llm_message()` and `any_llm_client.LLMClient.stream_llm_partial_messages()` will raise `any_llm_client.LLMError` or `any_llm_client.OutOfTokensOrSymbolsError` when the LLM API responds with a failed HTTP status.
 
 #### Retries
 
@@ -169,7 +169,7 @@ import any_llm_client
 
 
 async with httpx.AsyncClient(
-    mounts={"https://api.openai.com": httpx.HTTPTransport(proxy="http://localhost:8030")},
+    mounts={"https://api.openai.com": httpx.AsyncHTTPTransport(proxy="http://localhost:8030")},
     timeout=httpx.Timeout(None, connect=5.0),
 ) as httpx_client:
     llm_client = any_llm_client.get_client(..., httpx_client=httpx_client)
