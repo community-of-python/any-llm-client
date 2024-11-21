@@ -1,6 +1,5 @@
 import contextlib
 import dataclasses
-import types
 import typing
 
 from any_llm_client.core import LLMClient, LLMConfig, Message
@@ -32,10 +31,4 @@ class MockLLMClient(LLMClient):
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
         yield self._iter_config_stream_messages()
 
-    async def __aexit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: types.TracebackType | None,
-    ) -> bool | None:
-        return None
+    async def __aexit__(self, *exc_info: object) -> None: ...
