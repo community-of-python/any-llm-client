@@ -13,5 +13,5 @@ class ConfigHolder(pydantic.BaseModel):
     "config", [one_holder.config for one_holder in ModelFactory[ConfigHolder].create_factory(ConfigHolder).coverage()]
 )
 async def test_lifespan(config: any_llm_client.AnyLLMConfig) -> None:
-    async with any_llm_client.get_client(config) as client:
+    async with any_llm_client.get_client(config):
         pass

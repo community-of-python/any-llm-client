@@ -1,6 +1,5 @@
 import contextlib
 import dataclasses
-import types
 import typing
 from http import HTTPStatus
 
