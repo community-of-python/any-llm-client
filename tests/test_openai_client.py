@@ -86,7 +86,9 @@ class TestOpenAIRequestLLMPartialResponses:
             )
             + f"\n\ndata: [DONE]\n\ndata: {faker.pystr()}\n\n"
         )
-        response: typing.Final = httpx.Response(200, headers={"Content-Type": "text/event-stream"}, content=response_content)
+        response: typing.Final = httpx.Response(
+            200, headers={"Content-Type": "text/event-stream"}, content=response_content
+        )
         client: typing.Final = any_llm_client.get_client(
             config,
             httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
@@ -97,8 +99,12 @@ class TestOpenAIRequestLLMPartialResponses:
         assert result == expected_result
 
     async def test_fails_without_alternatives(self) -> None:
-        response_content: typing.Final = f"data: {ChatCompletionsStreamingEvent.model_construct(choices=[]).model_dump_json()}\n\n"
-        response: typing.Final = httpx.Response(200, headers={"Content-Type": "text/event-stream"}, content=response_content)
+        response_content: typing.Final = (
+            f"data: {ChatCompletionsStreamingEvent.model_construct(choices=[]).model_dump_json()}\n\n"
+        )
+        response: typing.Final = httpx.Response(
+            200, headers={"Content-Type": "text/event-stream"}, content=response_content
+        )
         client: typing.Final = any_llm_client.get_client(
             OpenAIConfigFactory.build(),
             httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
