@@ -1,5 +1,6 @@
 import contextlib
 import dataclasses
+import types
 import typing
 
 from any_llm_client.core import LLMClient, LLMConfig, Message
@@ -11,7 +12,7 @@ class MockLLMConfig(LLMConfig):
     api_type: typing.Literal["mock"] = "mock"
 
 
-@dataclasses.dataclass(frozen=True, kw_only=True, slots=True)
+@dataclasses.dataclass(kw_only=True, slots=True)
 class MockLLMClient(LLMClient):
     config: MockLLMConfig
 
@@ -30,3 +31,11 @@ class MockLLMClient(LLMClient):
         temperature: float,  # noqa: ARG002
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
         yield self._iter_config_stream_messages()
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: types.TracebackType | None,
+    ) -> bool | None:
+        return None

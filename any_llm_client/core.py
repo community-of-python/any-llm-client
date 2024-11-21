@@ -4,8 +4,6 @@ import typing
 
 import pydantic
 
-from any_llm_client.retry import RequestRetryConfig
-
 
 MessageRole = typing.Literal["system", "user", "assistant"]
 
@@ -32,10 +30,8 @@ class LLMConfig(pydantic.BaseModel):
     api_type: str
 
 
-@dataclasses.dataclass(frozen=True, kw_only=True, slots=True)
-class LLMClient(typing.Protocol):
-    request_retry: RequestRetryConfig = dataclasses.field(default_factory=RequestRetryConfig)
-
+@dataclasses.dataclass(slots=True, init=False)
+class LLMClient(typing.Protocol, typing.AsyncContextManager):
     async def request_llm_message(self, *, messages: list[Message], temperature: float) -> str: ...  # raises LLMError
 
     @contextlib.asynccontextmanager

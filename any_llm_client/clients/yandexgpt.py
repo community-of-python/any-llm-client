@@ -1,5 +1,6 @@
 import contextlib
 import dataclasses
+import types
 import typing
 from http import HTTPStatus
 
@@ -9,6 +10,7 @@ import pydantic
 
 from any_llm_client.core import LLMClient, LLMConfig, LLMError, Message, OutOfTokensOrSymbolsError
 from any_llm_client.http import make_http_request, make_streaming_http_request
+from any_llm_client.retry import RequestRetryConfig
 
 
 class YandexGPTConfig(LLMConfig):
@@ -55,10 +57,21 @@ def _handle_status_error(*, status_code: int, content: bytes) -> typing.NoReturn
     raise LLMError(response_content=content)
 
 
-@dataclasses.dataclass(frozen=True, kw_only=True, slots=True)
+@dataclasses.dataclass(slots=True, init=False)
 class YandexGPTClient(LLMClient):
     config: YandexGPTConfig
     httpx_client: httpx.AsyncClient
+    request_retry: RequestRetryConfig
+
+    def __init__(
+        self,
+        config: YandexGPTConfig,
+        httpx_client: httpx.AsyncClient | None = None,
+        request_retry: RequestRetryConfig | None = None,
+    ) -> None:
+        self.config = config
+        self.httpx_client = httpx_client or httpx.AsyncClient()
+        self.request_retry = request_retry or RequestRetryConfig()
 
     def _build_request(self, payload: dict[str, typing.Any]) -> httpx.Request:
         return self.httpx_client.build_request(
@@ -113,3 +126,11 @@ class YandexGPTClient(LLMClient):
             content: typing.Final = await exception.response.aread()
             await exception.response.aclose()
             _handle_status_error(status_code=exception.response.status_code, content=content)
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: types.TracebackType | None,
+    ) -> bool | None:
+        return None
