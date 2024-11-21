@@ -1,5 +1,6 @@
 import contextlib
 import dataclasses
+import types
 import typing
 from http import HTTPStatus
 
@@ -7,6 +8,7 @@ import annotated_types
 import httpx
 import httpx_sse
 import pydantic
+import typing_extensions
 
 from any_llm_client.core import LLMClient, LLMConfig, LLMError, Message, MessageRole, OutOfTokensOrSymbolsError
 from any_llm_client.http import make_http_request, make_streaming_http_request
@@ -174,9 +176,14 @@ class OpenAIClient(LLMClient):
             await exception.response.aclose()
             _handle_status_error(status_code=exception.response.status_code, content=content)
 
-    async def __aenter__(self) -> typing.Self:
+    async def __aenter__(self) -> typing_extensions.Self:
         await self.httpx_client.__aenter__()
         return self
 
-    async def __aexit__(self, *exc_info: object) -> None:
-        await self.httpx_client.__aexit__(*exc_info)
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: types.TracebackType | None,
+    ) -> None:
+        await self.httpx_client.__aexit__(exc_type=exc_type, exc_value=exc_value, traceback=traceback)

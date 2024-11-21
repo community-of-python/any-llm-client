@@ -1,8 +1,10 @@
 import contextlib
 import dataclasses
+import types
 import typing
 
 import pydantic
+import typing_extensions
 
 
 MessageRole = typing.Literal["system", "user", "assistant"]
@@ -31,7 +33,7 @@ class LLMConfig(pydantic.BaseModel):
 
 
 @dataclasses.dataclass(slots=True, init=False)
-class LLMClient(typing.Protocol, typing.AsyncContextManager):
+class LLMClient(typing.Protocol):
     async def request_llm_message(self, *, messages: list[Message], temperature: float) -> str: ...  # raises LLMError
 
     @contextlib.asynccontextmanager
@@ -39,4 +41,10 @@ class LLMClient(typing.Protocol, typing.AsyncContextManager):
         self, *, messages: list[Message], temperature: float
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]: ...  # raises LLMError
 
-    async def __aenter__(self) -> typing.Self: ...
+    async def __aenter__(self) -> typing_extensions.Self: ...
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: types.TracebackType | None,
+    ) -> None: ...

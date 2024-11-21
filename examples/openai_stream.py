@@ -1,13 +1,11 @@
 import asyncio  # noqa: INP001
 import sys
 
-import pydantic
-
 import any_llm_client
 
 
 config = any_llm_client.OpenAIConfig(
-    url=pydantic.HttpUrl("http://127.0.0.1:11434/v1/chat/completions"),  # ollama
+    url="http://127.0.0.1:11434/v1/chat/completions",
     model_name="qwen2.5-coder:1.5b",
 )
 

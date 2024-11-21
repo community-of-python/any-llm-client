@@ -1,11 +1,13 @@
 import contextlib
 import dataclasses
+import types
 import typing
 from http import HTTPStatus
 
 import annotated_types
 import httpx
 import pydantic
+import typing_extensions
 
 from any_llm_client.core import LLMClient, LLMConfig, LLMError, Message, OutOfTokensOrSymbolsError
 from any_llm_client.http import make_http_request, make_streaming_http_request
@@ -13,7 +15,10 @@ from any_llm_client.retry import RequestRetryConfig
 
 
 class YandexGPTConfig(LLMConfig):
-    url: pydantic.HttpUrl = pydantic.HttpUrl("https://llm.api.cloud.yandex.net/foundationModels/v1/completion")
+    if typing.TYPE_CHECKING:
+        url: str = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"  # pragma: no cover
+    else:
+        url: pydantic.HttpUrl = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
     auth_header: str
     folder_id: str
     model_name: str
@@ -126,9 +131,14 @@ class YandexGPTClient(LLMClient):
             await exception.response.aclose()
             _handle_status_error(status_code=exception.response.status_code, content=content)
 
-    async def __aenter__(self) -> typing.Self:
+    async def __aenter__(self) -> typing_extensions.Self:
         await self.httpx_client.__aenter__()
         return self
 
-    async def __aexit__(self, *exc_info: object) -> None:
-        await self.httpx_client.__aexit__(*exc_info)
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: types.TracebackType | None,
+    ) -> None:
+        await self.httpx_client.__aexit__(exc_type=exc_type, exc_value=exc_value, traceback=traceback)
