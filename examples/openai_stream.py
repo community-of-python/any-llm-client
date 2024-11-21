@@ -4,10 +4,10 @@ import sys
 import httpx
 import pydantic
 
-import any_llm
+import any_llm_client
 
 
-config = any_llm.OpenAIConfig(
+config = any_llm_client.OpenAIConfig(
     url=pydantic.HttpUrl("http://127.0.0.1:11434/v1/chat/completions"),  # ollama
     model_name="qwen2.5-coder:1.5b",
 )
@@ -16,10 +16,10 @@ config = any_llm.OpenAIConfig(
 async def main() -> None:
     async with (
         httpx.AsyncClient() as httpx_client,
-        any_llm.get_model(config, httpx_client=httpx_client).request_llm_partial_responses(
+        any_llm_client.get_model(config, httpx_client=httpx_client).request_llm_partial_responses(
             messages=[
-                any_llm.Message(role="system", text="Ты — опытный ассистент"),
-                any_llm.Message(role="user", text="Привет!"),
+                any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
+                any_llm_client.Message(role="user", text="Привет!"),
             ],
             temperature=0.1,
         ) as partial_messages,

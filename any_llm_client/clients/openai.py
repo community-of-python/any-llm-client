@@ -9,7 +9,7 @@ import httpx_sse
 import pydantic
 import stamina
 
-from any_llm.abc import LLMClient, LLMConfig, LLMError, Message, MessageRole, OutOfTokensOrSymbolsError
+from any_llm_client.abc import LLMClient, LLMConfig, LLMError, Message, MessageRole, OutOfTokensOrSymbolsError
 
 
 class OpenAIConfig(LLMConfig):

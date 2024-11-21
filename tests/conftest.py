@@ -5,7 +5,7 @@ import pytest
 import stamina
 from polyfactory.factories.typed_dict_factory import TypedDictFactory
 
-import any_llm
+import any_llm_client
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -19,7 +19,7 @@ def _deactivate_retries() -> None:
 
 
 class LLMFuncRequest(typing.TypedDict):
-    messages: list[any_llm.Message]
+    messages: list[any_llm_client.Message]
     temperature: float
 
 

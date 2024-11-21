@@ -1,5 +1,5 @@
 [project]
-name = "any-llm"
+name = "any-llm-client"
 description = "Add your description here" # TODO
 readme = "README.md"
 keywords = ["llm", "llm-client", "openai", "yandex", "yandexgpt"]

@@ -8,7 +8,7 @@ import httpx
 import pydantic
 import stamina
 
-from any_llm.abc import LLMClient, LLMConfig, LLMError, Message, OutOfTokensOrSymbolsError
+from any_llm_client.abc import LLMClient, LLMConfig, LLMError, Message, OutOfTokensOrSymbolsError
 
 
 class YandexGPTConfig(LLMConfig):

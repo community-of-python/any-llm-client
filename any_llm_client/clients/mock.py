@@ -2,7 +2,7 @@ import contextlib
 import dataclasses
 import typing
 
-from any_llm.abc import LLMClient, LLMConfig, Message
+from any_llm_client.abc import LLMClient, LLMConfig, Message
 
 
 class MockLLMConfig(LLMConfig):

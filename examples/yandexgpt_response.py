@@ -3,10 +3,10 @@ import os
 
 import httpx
 
-import any_llm
+import any_llm_client
 
 
-config = any_llm.YandexGPTConfig(
+config = any_llm_client.YandexGPTConfig(
     auth_header=os.environ["YANDEX_AUTH_HEADER"],
     folder_id=os.environ["YANDEX_FOLDER_ID"],
     model_name="yandexgpt",
@@ -15,10 +15,10 @@ config = any_llm.YandexGPTConfig(
 
 async def main() -> None:
     async with httpx.AsyncClient() as httpx_client:
-        response = await any_llm.get_model(config, httpx_client=httpx_client).request_llm_response(
+        response = await any_llm_client.get_model(config, httpx_client=httpx_client).request_llm_response(
             messages=[
-                any_llm.Message(role="system", text="Ты — опытный ассистент"),
-                any_llm.Message(role="user", text="Привет!"),
+                any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
+                any_llm_client.Message(role="user", text="Привет!"),
             ],
             temperature=0.1,
         )
