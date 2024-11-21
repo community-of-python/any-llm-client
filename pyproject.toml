@@ -26,13 +26,16 @@ dynamic = ["version"]
 [dependency-groups]
 dev = [
     "anyio",
-    "auto-typing-final",
     "faker",
-    "mypy",
     "polyfactory",
     "pydantic-settings",
     "pytest-cov",
     "pytest",
+]
+lint = [
+    {include="dev"},
+    "auto-typing-final",
+    "mypy",
     "ruff",
 ]
 

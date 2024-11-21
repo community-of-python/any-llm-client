@@ -5,10 +5,10 @@ install:
     uv sync --frozen
 
 lint:
-    uv run ruff check
-    uv run auto-typing-final .
-    uv run ruff format
-    uv run mypy .
+    uv run --group lint ruff check
+    uv run --group lint auto-typing-final .
+    uv run --group lint ruff format
+    uv run --group lint mypy .
 
 test *args:
     uv run pytest {{ args }}
