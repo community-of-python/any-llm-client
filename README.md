@@ -18,27 +18,15 @@ Here's a full example that uses Ollama and Qwen2.5-Coder:
 ```python
 import asyncio
 
-import pydantic
-
 import any_llm_client
 
 
-config = any_llm_client.OpenAIConfig(
-    url=pydantic.HttpUrl("http://127.0.0.1:11434/v1/chat/completions"),
-    model_name="qwen2.5-coder:1.5b",
-)
+config = any_llm_client.OpenAIConfig(url="http://127.0.0.1:11434/v1/chat/completions", model_name="qwen2.5-coder:1.5b")
 
 
 async def main() -> None:
     async with any_llm_client.get_client(config) as client:
-        response = await client.request_llm_message(
-            messages=[
-                any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
-                any_llm_client.Message(role="user", text="Привет!"),
-            ],
-            temperature=0.1,
-        )
-        print(response)  # type(response) is str
+        print(await client.request_llm_message("Кек, чо как вообще на нарах?"))
 
 
 asyncio.run(main())
@@ -48,9 +36,7 @@ To use `YandexGPT`, replace the config:
 
 ```python
 config = any_llm_client.YandexGPTConfig(
-    auth_header=os.environ["YANDEX_AUTH_HEADER"],
-    folder_id=os.environ["YANDEX_FOLDER_ID"],
-    model_name="yandexgpt",
+    auth_header=os.environ["YANDEX_AUTH_HEADER"], folder_id=os.environ["YANDEX_FOLDER_ID"], model_name="yandexgpt"
 )
 ```
 
@@ -60,39 +46,45 @@ LLMs often take long time to respond fully. Here's an example of streaming API u
 
 ```python
 import asyncio
-import sys
-
-import pydantic
 
 import any_llm_client
 
 
-config = any_llm_client.OpenAIConfig(
-    url=pydantic.HttpUrl("http://127.0.0.1:11434/v1/chat/completions"),
-    model_name="qwen2.5-coder:1.5b",
-)
+config = any_llm_client.OpenAIConfig(url="http://127.0.0.1:11434/v1/chat/completions", model_name="qwen2.5-coder:1.5b")
 
 
 async def main() -> None:
     async with (
         any_llm_client.get_client(config) as client,
-        client.stream_llm_partial_messages(
-            messages=[
-                any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
-                any_llm_client.Message(role="user", text="Привет!"),
-            ],
-            temperature=0.1,
-        ) as partial_messages,
+        client.stream_llm_partial_messages("Кек, чо как вообще на нарах?") as partial_messages,
     ):
-        async for one_message in partial_messages:  # type(one_message) is str
-            sys.stdout.write(f"\r{one_message}")
-            sys.stdout.flush()
+        async for message in partial_messages:
+            print("\033[2J")  # clear screen
+            print(message)
 
 
 asyncio.run(main())
 ```
 
 Note that this will yield partial growing message, not message chunks, for example: "Hi", "Hi there!", "Hi there! How can I help you?".
+
+### Passing chat history and temperature
+
+You can pass `list[any_llm_client.Message]` instead of `str` as the first argument, and set `temperature`:
+
+```python
+async with (
+    any_llm_client.get_client(config) as client,
+    client.stream_llm_partial_messages(
+        messages=[
+            any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
+            any_llm_client.Message(role="user", text="Кек, чо как вообще на нарах?"),
+        ],
+        temperature=1.0,
+    ) as partial_messages,
+):
+    ...
+```
 
 ### Other
 
