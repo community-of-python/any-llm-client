@@ -28,5 +28,5 @@ class MockLLMClient(LLMClient):
         *,
         messages: list[Message],  # noqa: ARG002
         temperature: float,  # noqa: ARG002
-    ) -> typing.AsyncGenerator[typing.AsyncIterable[str], None]:
+    ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
         yield self._iter_config_stream_messages()

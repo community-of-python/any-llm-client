@@ -149,7 +149,7 @@ class OpenAIClient(LLMClient):
     @contextlib.asynccontextmanager
     async def stream_llm_partial_responses(
         self, *, messages: list[Message], temperature: float
-    ) -> typing.AsyncGenerator[typing.AsyncIterable[str], None]:
+    ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
         payload: typing.Final = ChatCompletionsRequest(
             stream=True,
             model=self.config.model_name,
