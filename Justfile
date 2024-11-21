@@ -6,6 +6,7 @@ install:
 
 lint:
     uv run ruff check
+    uv run auto-typing-final .
     uv run ruff format
     uv run mypy .
 
