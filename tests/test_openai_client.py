@@ -34,7 +34,7 @@ class TestOpenAIRequestLLMResponse:
             ).model_dump(mode="json"),
         )
 
-        result: typing.Final = await any_llm_client.get_model(
+        result: typing.Final = await any_llm_client.get_client(
             OpenAIConfigFactory.build(),
             httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
         ).request_llm_response(**LLMFuncRequestFactory.build())
@@ -46,7 +46,7 @@ class TestOpenAIRequestLLMResponse:
             200,
             json=ChatCompletionsNotStreamingResponse.model_construct(choices=[]).model_dump(mode="json"),
         )
-        client = any_llm_client.get_model(
+        client = any_llm_client.get_client(
             OpenAIConfigFactory.build(),
             httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
         )
@@ -87,7 +87,7 @@ class TestOpenAIRequestLLMPartialResponses:
             + f"\n\ndata: [DONE]\n\ndata: {faker.pystr()}\n\n"
         )
         response = httpx.Response(200, headers={"Content-Type": "text/event-stream"}, content=response_content)
-        client = any_llm_client.get_model(
+        client = any_llm_client.get_client(
             config,
             httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
         )
@@ -99,7 +99,7 @@ class TestOpenAIRequestLLMPartialResponses:
     async def test_fails_without_alternatives(self) -> None:
         response_content = f"data: {ChatCompletionsStreamingEvent.model_construct(choices=[]).model_dump_json()}\n\n"
         response = httpx.Response(200, headers={"Content-Type": "text/event-stream"}, content=response_content)
-        client = any_llm_client.get_model(
+        client = any_llm_client.get_client(
             OpenAIConfigFactory.build(),
             httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
         )
@@ -112,7 +112,7 @@ class TestOpenAILLMErrors:
     @pytest.mark.parametrize("stream", [True, False])
     @pytest.mark.parametrize("status_code", [400, 500])
     async def test_fails_with_unknown_error(self, stream: bool, status_code: int) -> None:
-        client = any_llm_client.get_model(
+        client = any_llm_client.get_client(
             OpenAIConfigFactory.build(),
             httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: httpx.Response(status_code))),
         )
@@ -137,7 +137,7 @@ class TestOpenAILLMErrors:
     )
     async def test_fails_with_out_of_tokens_error(self, stream: bool, content: bytes | None) -> None:
         response = httpx.Response(400, content=content)
-        client = any_llm_client.get_model(
+        client = any_llm_client.get_client(
             OpenAIConfigFactory.build(),
             httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
         )

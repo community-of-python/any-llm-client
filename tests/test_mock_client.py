@@ -11,7 +11,7 @@ class MockLLMConfigFactory(ModelFactory[any_llm_client.MockLLMConfig]): ...
 
 async def test_mock_client_request_llm_response_returns_config_value() -> None:
     config = MockLLMConfigFactory.build()
-    response = await any_llm_client.get_model(config, httpx_client=mock.Mock()).request_llm_response(
+    response = await any_llm_client.get_client(config, httpx_client=mock.Mock()).request_llm_response(
         **LLMFuncRequestFactory.build()
     )
     assert response == config.response_message
@@ -20,7 +20,7 @@ async def test_mock_client_request_llm_response_returns_config_value() -> None:
 async def test_mock_client_request_llm_partial_responses_returns_config_value() -> None:
     config = MockLLMConfigFactory.build()
     response = await consume_llm_partial_responses(
-        any_llm_client.get_model(config, httpx_client=mock.Mock()).request_llm_partial_responses(
+        any_llm_client.get_client(config, httpx_client=mock.Mock()).request_llm_partial_responses(
             **LLMFuncRequestFactory.build()
         )
     )

@@ -2,7 +2,7 @@ from any_llm_client.abc import LLMClient, LLMConfig, LLMError, Message, MessageR
 from any_llm_client.clients.mock import MockLLMClient, MockLLMConfig
 from any_llm_client.clients.openai import OpenAIClient, OpenAIConfig
 from any_llm_client.clients.yandexgpt import YandexGPTClient, YandexGPTConfig
-from any_llm_client.main import AnyLLMConfig, get_model
+from any_llm_client.main import AnyLLMConfig, get_client
 
 
 __all__ = [
@@ -18,6 +18,6 @@ __all__ = [
     "OpenAIConfig",
     "YandexGPTClient",
     "YandexGPTConfig",
-    "get_model",
+    "get_client",
     "AnyLLMConfig",
 ]
