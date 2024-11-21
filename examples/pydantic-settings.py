@@ -2,7 +2,6 @@ import asyncio  # noqa: INP001
 import os
 import typing
 
-import httpx
 import pydantic_settings
 
 import any_llm_client
@@ -21,10 +20,8 @@ settings = Settings()
 
 
 async def main() -> None:
-    async with httpx.AsyncClient() as httpx_client:
-        response: typing.Final = await any_llm_client.get_client(
-            settings.llm_model, httpx_client=httpx_client
-        ).request_llm_message(
+    async with any_llm_client.get_client(settings.llm_model) as client:
+        response: typing.Final = await client.request_llm_message(
             messages=[
                 any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
                 any_llm_client.Message(role="user", text="Привет!"),

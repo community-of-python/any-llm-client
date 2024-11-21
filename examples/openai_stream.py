@@ -1,7 +1,6 @@
 import asyncio  # noqa: INP001
 import sys
 
-import httpx
 import pydantic
 
 import any_llm_client
@@ -15,8 +14,8 @@ config = any_llm_client.OpenAIConfig(
 
 async def main() -> None:
     async with (
-        httpx.AsyncClient() as httpx_client,
-        any_llm_client.get_client(config, httpx_client=httpx_client).stream_llm_partial_messages(
+        any_llm_client.get_client(config) as client,
+        client.stream_llm_partial_messages(
             messages=[
                 any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
                 any_llm_client.Message(role="user", text="Привет!"),

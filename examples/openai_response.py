@@ -1,7 +1,5 @@
 import asyncio  # noqa: INP001
-import typing
 
-import httpx
 import pydantic
 
 import any_llm_client
@@ -14,8 +12,8 @@ config = any_llm_client.OpenAIConfig(
 
 
 async def main() -> None:
-    async with httpx.AsyncClient() as httpx_client:
-        response: typing.Final = await any_llm_client.get_client(config, httpx_client=httpx_client).request_llm_message(
+    async with any_llm_client.get_client(config) as client:
+        response = await client.request_llm_message(
             messages=[
                 any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
                 any_llm_client.Message(role="user", text="Привет!"),

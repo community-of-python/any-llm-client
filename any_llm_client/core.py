@@ -38,3 +38,5 @@ class LLMClient(typing.Protocol, typing.AsyncContextManager):
     def stream_llm_partial_messages(
         self, *, messages: list[Message], temperature: float
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]: ...  # raises LLMError
+
+    async def __aenter__(self) -> typing.Self: ...
