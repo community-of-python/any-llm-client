@@ -66,7 +66,6 @@ class YandexGPTClient(LLMClient):
             url=str(self.config.url),
             json=payload,
             headers={"Authorization": self.config.auth_header, "x-data-logging-enabled": "false"},
-            timeout=None,
         )
 
     def _prepare_payload(self, *, messages: list[Message], temperature: float, stream: bool) -> dict[str, typing.Any]:
