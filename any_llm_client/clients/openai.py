@@ -7,9 +7,9 @@ import annotated_types
 import httpx
 import httpx_sse
 import pydantic
-import stamina
 
 from any_llm_client.core import LLMClient, LLMConfig, LLMError, Message, MessageRole, OutOfTokensOrSymbolsError
+from any_llm_client.http import make_http_request, make_streaming_http_request
 
 
 class OpenAIConfig(LLMConfig):
@@ -91,21 +91,13 @@ class OpenAIClient(LLMClient):
     config: OpenAIConfig
     httpx_client: httpx.AsyncClient
 
-    @stamina.retry(on=httpx.HTTPError, attempts=3)
-    async def _make_request(self, *, payload: dict[str, typing.Any], stream: bool) -> httpx.Response:
-        @stamina.retry(on=httpx.HTTPError, **dataclasses.asdict(self.request_retry))
-        async def _make_request_with_retries() -> httpx.Response:
-            request: typing.Final = self.httpx_client.build_request(
-                method="POST",
-                url=str(self.config.url),
-                json=payload,
-                headers={"Authorization": f"Bearer {self.config.auth_token}"} if self.config.auth_token else None,
-            )
-            response: typing.Final = await self.httpx_client.send(request, stream=stream)
-            response.raise_for_status()
-            return response
-
-        return await _make_request_with_retries()
+    def _build_request(self, payload: dict[str, typing.Any]) -> httpx.Request:
+        return self.httpx_client.build_request(
+            method="POST",
+            url=str(self.config.url),
+            json=payload,
+            headers={"Authorization": f"Bearer {self.config.auth_token}"} if self.config.auth_token else None,
+        )
 
     def _prepare_messages(self, messages: list[Message]) -> list[ChatCompletionsMessage]:
         initial_messages = (
@@ -125,11 +117,13 @@ class OpenAIClient(LLMClient):
             temperature=temperature,
         ).model_dump(mode="json")
         try:
-            response: typing.Final = await self._make_request(payload=payload, stream=False)
+            response: typing.Final = await make_http_request(
+                httpx_client=self.httpx_client,
+                request_retry=self.request_retry,
+                build_request=lambda: self._build_request(payload),
+            )
         except httpx.HTTPStatusError as exception:
-            content: typing.Final = await exception.response.aread()
-            await exception.response.aclose()
-            _handle_status_error(status_code=exception.response.status_code, content=content)
+            _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
         try:
             return ChatCompletionsNotStreamingResponse.model_validate_json(response.content).choices[0].message.content
         finally:
@@ -157,12 +151,13 @@ class OpenAIClient(LLMClient):
             temperature=temperature,
         ).model_dump(mode="json")
         try:
-            response: typing.Final = await self._make_request(payload=payload, stream=True)
+            async with make_streaming_http_request(
+                httpx_client=self.httpx_client,
+                request_retry=self.request_retry,
+                build_request=lambda: self._build_request(payload),
+            ) as response:
+                yield self._iter_partial_responses(response)
         except httpx.HTTPStatusError as exception:
             content: typing.Final = await exception.response.aread()
-            await exception.response.aclose()
+            await exception.response.aclose()  # TODO: check if tests will fail if i remove this
             _handle_status_error(status_code=exception.response.status_code, content=content)
-        try:
-            yield self._iter_partial_responses(response)
-        finally:
-            await response.aclose()
