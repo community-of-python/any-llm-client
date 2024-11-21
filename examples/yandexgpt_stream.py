@@ -6,25 +6,17 @@ import any_llm_client
 
 
 config = any_llm_client.YandexGPTConfig(
-    auth_header=os.environ["YANDEX_AUTH_HEADER"],
-    folder_id=os.environ["YANDEX_FOLDER_ID"],
-    model_name="yandexgpt",
+    auth_header=os.environ["YANDEX_AUTH_HEADER"], folder_id=os.environ["YANDEX_FOLDER_ID"], model_name="yandexgpt"
 )
 
 
 async def main() -> None:
     async with (
         any_llm_client.get_client(config) as client,
-        client.stream_llm_partial_messages(
-            messages=[
-                any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
-                any_llm_client.Message(role="user", text="Привет!"),
-            ],
-            temperature=0.1,
-        ) as partial_messages,
+        client.stream_llm_partial_messages("Кек, чо как вообще на нарах?") as partial_messages,
     ):
-        async for one_message in partial_messages:
-            sys.stdout.write(f"\r{one_message}")
+        async for message in partial_messages:
+            sys.stdout.write(f"\r{message}")
             sys.stdout.flush()
 
 

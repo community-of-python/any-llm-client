@@ -25,7 +25,6 @@ class MockLLMClient(LLMClient):
     @contextlib.asynccontextmanager
     async def stream_llm_partial_messages(
         self,
-        *,
         messages: str | list[Message],  # noqa: ARG002
         temperature: float = 0.2,  # noqa: ARG002
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:

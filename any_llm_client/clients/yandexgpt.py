@@ -86,7 +86,7 @@ class YandexGPTClient(LLMClient):
         )
 
     def _prepare_payload(
-        self, messages: str | list[Message], temperature: float = 0.2, stream: bool
+        self, *, messages: str | list[Message], temperature: float = 0.2, stream: bool
     ) -> dict[str, typing.Any]:
         return YandexGPTRequest(
             modelUri=f"gpt://{self.config.folder_id}/{self.config.model_name}/{self.config.model_version}",

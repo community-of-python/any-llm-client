@@ -1,6 +1,5 @@
 import asyncio  # noqa: INP001
 import os
-import typing
 
 import pydantic_settings
 
@@ -21,14 +20,7 @@ settings = Settings()
 
 async def main() -> None:
     async with any_llm_client.get_client(settings.llm_model) as client:
-        response: typing.Final = await client.request_llm_message(
-            messages=[
-                any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
-                any_llm_client.Message(role="user", text="Привет!"),
-            ],
-            temperature=0.1,
-        )
-    print(response)  # noqa: T201
+        print(await client.request_llm_message("Кек, чо как вообще на нарах?"))  # noqa: T201
 
 
 asyncio.run(main())
