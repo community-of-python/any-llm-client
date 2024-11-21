@@ -18,7 +18,6 @@ Here's a full example that uses Ollama and Qwen2.5-Coder:
 ```python
 import asyncio
 
-import httpx
 import pydantic
 
 import any_llm_client
@@ -31,8 +30,8 @@ config = any_llm_client.OpenAIConfig(
 
 
 async def main() -> None:
-    async with httpx.AsyncClient() as httpx_client:
-        response = await any_llm_client.get_client(config, httpx_client=httpx_client).request_llm_message(
+    async with any_llm_client.get_client(config) as client:
+        response = await client.request_llm_message(
             messages=[
                 any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
                 any_llm_client.Message(role="user", text="Привет!"),
@@ -63,7 +62,6 @@ LLMs often take long time to respond fully. Here's an example of streaming API u
 import asyncio
 import sys
 
-import httpx
 import pydantic
 
 import any_llm_client
@@ -77,8 +75,8 @@ config = any_llm_client.OpenAIConfig(
 
 async def main() -> None:
     async with (
-        httpx.AsyncClient() as httpx_client,
-        any_llm_client.get_client(config, httpx_client=httpx_client).stream_llm_partial_messages(
+        any_llm_client.get_client(config) as client,
+        client.stream_llm_partial_messages(
             messages=[
                 any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
                 any_llm_client.Message(role="user", text="Привет!"),
@@ -107,7 +105,7 @@ config = any_llm_client.MockLLMConfig(
     response_message=...,
     stream_messages=["Hi!"],
 )
-llm_client = any_llm_client.get_client(config, ...)
+client = any_llm_client.get_client(config, ...)
 ```
 
 #### Using dynamic LLM config from environment with [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/)
@@ -143,24 +141,16 @@ config = any_llm_client.OpenAIConfig(
     auth_token=os.environ["OPENAI_API_KEY"],
     model_name="gpt-4o-mini",
 )
-llm_client = any_llm_client.OpenAIClient(config, ...)
+client = any_llm_client.OpenAIClient(config, ...)
 ```
 
 #### Errors
 
 `any_llm_client.LLMClient.request_llm_message()` and `any_llm_client.LLMClient.stream_llm_partial_messages()` will raise `any_llm_client.LLMError` or `any_llm_client.OutOfTokensOrSymbolsError` when the LLM API responds with a failed HTTP status.
 
-#### Retries
+#### Timeouts, proxy & other HTTP settings
 
-By default, requests are retried 3 times on HTTP status errors. You can change the retry behaviour by supplying `request_retry` parameter:
-
-```python
-llm_client = any_llm_client.get_client(..., request_retry=any_llm_client.RequestRetryConfig(attempts=5, ...))
-```
-
-#### Timeouts and proxy
-
-Configure timeouts or proxy directly in `httpx.AsyncClient()`:
+Pass custom [HTTPX](https://www.python-httpx.org) client:
 
 ```python
 import httpx
@@ -168,9 +158,20 @@ import httpx
 import any_llm_client
 
 
-async with httpx.AsyncClient(
-    mounts={"https://api.openai.com": httpx.AsyncHTTPTransport(proxy="http://localhost:8030")},
-    timeout=httpx.Timeout(None, connect=5.0),
-) as httpx_client:
-    llm_client = any_llm_client.get_client(..., httpx_client=httpx_client)
+async with any_llm_client.get_client(
+    ...,
+    httpx_client=httpx.AsyncClient(
+        mounts={"https://api.openai.com": httpx.AsyncHTTPTransport(proxy="http://localhost:8030")},
+        timeout=httpx.Timeout(None, connect=5.0),
+    ),
+) as client:
+    ...
+```
+
+#### Retries
+
+By default, requests are retried 3 times on HTTP status errors. You can change the retry behaviour by supplying `request_retry` parameter:
+
+```python
+client = any_llm_client.get_client(..., request_retry=any_llm_client.RequestRetryConfig(attempts=5, ...))
 ```
