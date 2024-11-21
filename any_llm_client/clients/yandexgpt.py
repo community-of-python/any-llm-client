@@ -37,7 +37,7 @@ class YandexGPTRequest(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(protected_namespaces=())
     model_uri: str = pydantic.Field(alias="modelUri")
     completion_options: YandexGPTCompletionOptions = pydantic.Field(alias="completionOptions")
-    messages: str | list[Message]
+    messages: list[Message]
 
 
 class YandexGPTAlternative(pydantic.BaseModel):
@@ -88,6 +88,7 @@ class YandexGPTClient(LLMClient):
     def _prepare_payload(
         self, *, messages: str | list[Message], temperature: float = 0.2, stream: bool
     ) -> dict[str, typing.Any]:
+        messages = [Message(role="user", text=messages)] if isinstance(messages, str) else messages
         return YandexGPTRequest(
             modelUri=f"gpt://{self.config.folder_id}/{self.config.model_name}/{self.config.model_version}",
             completionOptions=YandexGPTCompletionOptions(

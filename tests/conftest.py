@@ -19,7 +19,7 @@ def _deactivate_retries() -> None:
 
 
 class LLMFuncRequest(typing.TypedDict):
-    messages: list[any_llm_client.Message]
+    messages: str | list[any_llm_client.Message]
     temperature: float
 
 

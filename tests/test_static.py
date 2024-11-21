@@ -5,6 +5,7 @@ import faker
 import stamina
 
 import any_llm_client
+from tests.conftest import LLMFuncRequest
 
 
 def test_request_retry_config_default_kwargs_match() -> None:
@@ -23,3 +24,19 @@ def test_request_retry_config_default_kwargs_match() -> None:
 def test_llm_error_str(faker: faker.Faker) -> None:
     response_content: typing.Final = faker.pystr().encode()
     assert str(any_llm_client.LLMError(response_content=response_content)) == f"(response_content={response_content!r})"
+
+
+def test_llm_func_request_has_same_annotations_as_llm_client_methods() -> None:
+    all_objects = (
+        any_llm_client.LLMClient.request_llm_message,
+        any_llm_client.LLMClient.stream_llm_partial_messages,
+        LLMFuncRequest,
+    )
+    all_annotations = [typing.get_type_hints(one_object) for one_object in all_objects]
+
+    for one_ignored_prop in ("return",):
+        for annotations in all_annotations:
+            if one_ignored_prop in annotations:
+                annotations.pop(one_ignored_prop)
+
+    assert all(annotations == all_annotations[0] for annotations in all_annotations)
