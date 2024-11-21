@@ -96,28 +96,9 @@ asyncio.run(main())
 
 Note that this will yield partial growing message, not message chunks, for example: "Hi", "Hi there!", "Hi there! How can I help you?".
 
-### Using clients directly
+### Other
 
-The recommended way to get LLM client is to call `any_llm_client.get_client()`. This way you can easily swap LLM models. If you prefer, you can use `any_llm_client.OpenAIClient` or `any_llm_client.YandexGPTClient` directly:
-
-```python
-config = any_llm_client.OpenAIConfig(
-    url=pydantic.HttpUrl("https://api.openai.com/v1/chat/completions"),
-    auth_token=os.environ["OPENAI_API_KEY"],
-    model_name="gpt-4o-mini",
-)
-llm_client = any_llm_client.OpenAIClient(config, httpx_client=...)
-```
-
-### Retries
-
-By default, requests are retried 3 times on HTTP status errors. You can change the retry behaviour by supplying `request_retry` parameter:
-
-```python
-llm_client = any_llm_client.get_client(..., request_retry=any_llm_client.RequestRetryConfig(attempts=5, ...))
-```
-
-### Mock client
+#### Mock client
 
 You can use a mock client for testing:
 
@@ -129,7 +110,7 @@ config = any_llm_client.MockLLMConfig(
 llm_client = any_llm_client.get_client(config, ...)
 ```
 
-### Using dynamic LLM config from environment with Pydantic Settings
+#### Using dynamic LLM config from environment with [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/)
 
 ```python
 import os
@@ -152,11 +133,32 @@ settings = Settings()
 client = any_llm_client.get_client(settings.llm_model, ...)
 ```
 
-### Errors
+#### Using clients directly
+
+The recommended way to get LLM client is to call `any_llm_client.get_client()`. This way you can easily swap LLM models. If you prefer, you can use `any_llm_client.OpenAIClient` or `any_llm_client.YandexGPTClient` directly:
+
+```python
+config = any_llm_client.OpenAIConfig(
+    url=pydantic.HttpUrl("https://api.openai.com/v1/chat/completions"),
+    auth_token=os.environ["OPENAI_API_KEY"],
+    model_name="gpt-4o-mini",
+)
+llm_client = any_llm_client.OpenAIClient(config, ...)
+```
+
+#### Errors
 
 `any_llm_client.LLMClient.request_llm_response()` and `any_llm_client.LLMClient.stream_llm_partial_responses()` will raise `any_llm_client.LLMError` or `any_llm_client.OutOfTokensOrSymbolsError` when the LLM API responds with a failed HTTP status.
 
-### Timeouts and proxy
+#### Retries
+
+By default, requests are retried 3 times on HTTP status errors. You can change the retry behaviour by supplying `request_retry` parameter:
+
+```python
+llm_client = any_llm_client.get_client(..., request_retry=any_llm_client.RequestRetryConfig(attempts=5, ...))
+```
+
+#### Timeouts and proxy
 
 Configure timeouts or proxy directly in `httpx.AsyncClient()`:
 
