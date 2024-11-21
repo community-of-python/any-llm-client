@@ -169,9 +169,7 @@ import any_llm_client
 
 
 async with httpx.AsyncClient(
-    proxies={
-        "https://api.openai.com": httpx.HTTPTransport(proxy="http://localhost:8030"),
-    },
+    mounts={"https://api.openai.com": httpx.HTTPTransport(proxy="http://localhost:8030")},
     timeout=httpx.Timeout(None, connect=5.0),
 ) as httpx_client:
     llm_client = any_llm_client.get_client(..., httpx_client=httpx_client)
