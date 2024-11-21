@@ -31,7 +31,7 @@ class TestYandexGPTRequestLLMResponse:
         result: typing.Final = await any_llm_client.get_client(
             YandexGPTConfigFactory.build(),
             httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
-        ).request_llm_response(**LLMFuncRequestFactory.build())
+        ).request_llm_message(**LLMFuncRequestFactory.build())
 
         assert result == expected_result
 
@@ -45,7 +45,7 @@ class TestYandexGPTRequestLLMResponse:
         )
 
         with pytest.raises(pydantic.ValidationError):
-            await client.request_llm_response(**LLMFuncRequestFactory.build())
+            await client.request_llm_message(**LLMFuncRequestFactory.build())
 
 
 class TestYandexGPTRequestLLMPartialResponses:
@@ -71,7 +71,7 @@ class TestYandexGPTRequestLLMPartialResponses:
         result: typing.Final = await consume_llm_partial_responses(
             any_llm_client.get_client(
                 config, httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response))
-            ).stream_llm_partial_responses(**func_request)
+            ).stream_llm_partial_messages(**func_request)
         )
 
         assert result == expected_result
@@ -88,7 +88,7 @@ class TestYandexGPTRequestLLMPartialResponses:
         )
 
         with pytest.raises(pydantic.ValidationError):
-            await consume_llm_partial_responses(client.stream_llm_partial_responses(**LLMFuncRequestFactory.build()))
+            await consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
 
 
 class TestYandexGPTLLMErrors:
@@ -101,9 +101,9 @@ class TestYandexGPTLLMErrors:
         )
 
         coroutine: typing.Final = (
-            consume_llm_partial_responses(client.stream_llm_partial_responses(**LLMFuncRequestFactory.build()))
+            consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
             if stream
-            else client.request_llm_response(**LLMFuncRequestFactory.build())
+            else client.request_llm_message(**LLMFuncRequestFactory.build())
         )
 
         with pytest.raises(any_llm_client.LLMError) as exc_info:
@@ -126,9 +126,9 @@ class TestYandexGPTLLMErrors:
         )
 
         coroutine: typing.Final = (
-            consume_llm_partial_responses(client.stream_llm_partial_responses(**LLMFuncRequestFactory.build()))
+            consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
             if stream
-            else client.request_llm_response(**LLMFuncRequestFactory.build())
+            else client.request_llm_message(**LLMFuncRequestFactory.build())
         )
 
         with pytest.raises(any_llm_client.OutOfTokensOrSymbolsError):

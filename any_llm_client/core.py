@@ -36,9 +36,9 @@ class LLMConfig(pydantic.BaseModel):
 class LLMClient(typing.Protocol):
     request_retry: RequestRetryConfig = dataclasses.field(default_factory=RequestRetryConfig)
 
-    async def request_llm_response(self, *, messages: list[Message], temperature: float) -> str: ...  # raises LLMError
+    async def request_llm_message(self, *, messages: list[Message], temperature: float) -> str: ...  # raises LLMError
 
     @contextlib.asynccontextmanager
-    def stream_llm_partial_responses(
+    def stream_llm_partial_messages(
         self, *, messages: list[Message], temperature: float
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]: ...  # raises LLMError

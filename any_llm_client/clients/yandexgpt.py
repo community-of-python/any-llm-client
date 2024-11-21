@@ -77,7 +77,7 @@ class YandexGPTClient(LLMClient):
             messages=messages,
         ).model_dump(mode="json", by_alias=True)
 
-    async def request_llm_response(self, *, messages: list[Message], temperature: float) -> str:
+    async def request_llm_message(self, *, messages: list[Message], temperature: float) -> str:
         payload: typing.Final = self._prepare_payload(messages=messages, temperature=temperature, stream=False)
 
         try:
@@ -97,7 +97,7 @@ class YandexGPTClient(LLMClient):
             yield validated_response.result.alternatives[0].message.text
 
     @contextlib.asynccontextmanager
-    async def stream_llm_partial_responses(
+    async def stream_llm_partial_messages(
         self, *, messages: list[Message], temperature: float
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
         payload: typing.Final = self._prepare_payload(messages=messages, temperature=temperature, stream=True)

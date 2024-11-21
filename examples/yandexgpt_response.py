@@ -16,9 +16,7 @@ config = any_llm_client.YandexGPTConfig(
 
 async def main() -> None:
     async with httpx.AsyncClient() as httpx_client:
-        response: typing.Final = await any_llm_client.get_client(
-            config, httpx_client=httpx_client
-        ).request_llm_response(
+        response: typing.Final = await any_llm_client.get_client(config, httpx_client=httpx_client).request_llm_message(
             messages=[
                 any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
                 any_llm_client.Message(role="user", text="Привет!"),

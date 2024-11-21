@@ -37,7 +37,7 @@ class TestOpenAIRequestLLMResponse:
         result: typing.Final = await any_llm_client.get_client(
             OpenAIConfigFactory.build(),
             httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
-        ).request_llm_response(**LLMFuncRequestFactory.build())
+        ).request_llm_message(**LLMFuncRequestFactory.build())
 
         assert result == expected_result
 
@@ -52,7 +52,7 @@ class TestOpenAIRequestLLMResponse:
         )
 
         with pytest.raises(pydantic.ValidationError):
-            await client.request_llm_response(**LLMFuncRequestFactory.build())
+            await client.request_llm_message(**LLMFuncRequestFactory.build())
 
 
 class TestOpenAIRequestLLMPartialResponses:
@@ -94,7 +94,7 @@ class TestOpenAIRequestLLMPartialResponses:
             httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
         )
 
-        result: typing.Final = await consume_llm_partial_responses(client.stream_llm_partial_responses(**func_request))
+        result: typing.Final = await consume_llm_partial_responses(client.stream_llm_partial_messages(**func_request))
 
         assert result == expected_result
 
@@ -111,7 +111,7 @@ class TestOpenAIRequestLLMPartialResponses:
         )
 
         with pytest.raises(pydantic.ValidationError):
-            await consume_llm_partial_responses(client.stream_llm_partial_responses(**LLMFuncRequestFactory.build()))
+            await consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
 
 
 class TestOpenAILLMErrors:
@@ -124,9 +124,9 @@ class TestOpenAILLMErrors:
         )
 
         coroutine: typing.Final = (
-            consume_llm_partial_responses(client.stream_llm_partial_responses(**LLMFuncRequestFactory.build()))
+            consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
             if stream
-            else client.request_llm_response(**LLMFuncRequestFactory.build())
+            else client.request_llm_message(**LLMFuncRequestFactory.build())
         )
 
         with pytest.raises(any_llm_client.LLMError) as exc_info:
@@ -149,9 +149,9 @@ class TestOpenAILLMErrors:
         )
 
         coroutine: typing.Final = (
-            consume_llm_partial_responses(client.stream_llm_partial_responses(**LLMFuncRequestFactory.build()))
+            consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
             if stream
-            else client.request_llm_response(**LLMFuncRequestFactory.build())
+            else client.request_llm_message(**LLMFuncRequestFactory.build())
         )
 
         with pytest.raises(any_llm_client.OutOfTokensOrSymbolsError):
