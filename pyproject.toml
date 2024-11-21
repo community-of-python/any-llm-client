@@ -25,13 +25,14 @@ dynamic = ["version"]
 
 [dependency-groups]
 dev = [
-    "mypy",
-    "polyfactory",
-    "pytest",
-    "pytest-cov",
-    "ruff",
     "anyio",
     "faker",
+    "mypy",
+    "polyfactory",
+    "pydantic-settings",
+    "pytest-cov",
+    "pytest",
+    "ruff",
 ]
 
 [build-system]
@@ -46,6 +47,7 @@ source = "vcs"
 python_version = "3.10"
 warn_unused_ignores = true
 strict = true
+plugins = ["pydantic.mypy"]
 
 [tool.ruff]
 target-version = "py310"
