@@ -36,6 +36,6 @@ class LLMClient(typing.Protocol):
     async def request_llm_response(self, *, messages: list[Message], temperature: float) -> str: ...  # raises LLMError
 
     @contextlib.asynccontextmanager
-    def request_llm_partial_responses(
+    def stream_llm_partial_responses(
         self, *, messages: list[Message], temperature: float
     ) -> typing.AsyncGenerator[typing.AsyncIterable[str], None]: ...  # raises LLMError

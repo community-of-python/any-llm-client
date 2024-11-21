@@ -106,7 +106,7 @@ class YandexGPTClient(LLMClient):
             yield validated_response.result.alternatives[0].message.text
 
     @contextlib.asynccontextmanager
-    async def request_llm_partial_responses(
+    async def stream_llm_partial_responses(
         self, *, messages: list[Message], temperature: float
     ) -> typing.AsyncGenerator[typing.AsyncIterable[str], None]:
         payload: typing.Final = self._prepare_payload(messages=messages, temperature=temperature, stream=True)

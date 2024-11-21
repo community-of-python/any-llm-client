@@ -23,7 +23,7 @@ class MockLLMClient(LLMClient):
             yield one_message
 
     @contextlib.asynccontextmanager
-    async def request_llm_partial_responses(
+    async def stream_llm_partial_responses(
         self,
         *,
         messages: list[Message],  # noqa: ARG002

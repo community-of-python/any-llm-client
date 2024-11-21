@@ -20,7 +20,7 @@ async def test_mock_client_request_llm_response_returns_config_value() -> None:
 async def test_mock_client_request_llm_partial_responses_returns_config_value() -> None:
     config = MockLLMConfigFactory.build()
     response = await consume_llm_partial_responses(
-        any_llm_client.get_client(config, httpx_client=mock.Mock()).request_llm_partial_responses(
+        any_llm_client.get_client(config, httpx_client=mock.Mock()).stream_llm_partial_responses(
             **LLMFuncRequestFactory.build()
         )
     )
