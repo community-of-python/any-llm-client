@@ -4,12 +4,13 @@ import datetime
 
 @dataclasses.dataclass(frozen=True, kw_only=True, slots=True)
 class RequestRetryConfig:
-    """Retry configuration for request. Applies to httpx.HTTPError.
+    """Request retry configuration that is passed to `stamina.retry`. Applies to httpx.HTTPError.
 
+    Uses defaults from `stamina.retry` except for attempts: by default 3 instead of 10.
     See more at https://stamina.hynek.me/en/stable/api.html#stamina.retry
     """
 
-    attempts: int | None = 10
+    attempts: int | None = 3
     "Maximum total number of attempts. Can be combined with *timeout*."
     timeout: float | datetime.timedelta | None = 45.0
     "Maximum total time for all retries. Can be combined with *attempts*."
