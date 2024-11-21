@@ -33,7 +33,7 @@ class ChatCompletionsRequest(pydantic.BaseModel):
     stream: bool
     model: str
     messages: list[ChatCompletionsMessage]
-    temperature: float
+    temperature: float = 0.2
 
 
 class OneStreamingChoiceDelta(pydantic.BaseModel):
@@ -123,7 +123,7 @@ class OpenAIClient(LLMClient):
             else list(initial_messages)
         )
 
-    async def request_llm_message(self, *, messages: str | list[Message], temperature: float) -> str:
+    async def request_llm_message(self, messages: str | list[Message], temperature: float = 0.2) -> str:
         payload: typing.Final = ChatCompletionsRequest(
             stream=False,
             model=self.config.model_name,
@@ -156,7 +156,7 @@ class OpenAIClient(LLMClient):
 
     @contextlib.asynccontextmanager
     async def stream_llm_partial_messages(
-        self, *, messages: str | list[Message], temperature: float
+        self, messages: str | list[Message], temperature: float = 0.2
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
         payload: typing.Final = ChatCompletionsRequest(
             stream=True,

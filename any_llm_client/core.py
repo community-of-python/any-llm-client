@@ -35,12 +35,12 @@ class LLMConfig(pydantic.BaseModel):
 @dataclasses.dataclass(slots=True, init=False)
 class LLMClient(typing.Protocol):
     async def request_llm_message(
-        self, *, messages: str | list[Message], temperature: float
+        self, messages: str | list[Message], *, temperature: float = 0.2
     ) -> str: ...  # raises LLMError
 
     @contextlib.asynccontextmanager
     def stream_llm_partial_messages(
-        self, *, messages: str | list[Message], temperature: float
+        self, messages: str | list[Message], temperature: float = 0.2
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]: ...  # raises LLMError
 
     async def __aenter__(self) -> typing_extensions.Self: ...

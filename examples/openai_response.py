@@ -12,13 +12,7 @@ config = any_llm_client.OpenAIConfig(
 
 async def main() -> None:
     async with any_llm_client.get_client(config) as client:
-        response: typing.Final = await client.request_llm_message(
-            messages=[
-                any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
-                any_llm_client.Message(role="user", text="Привет!"),
-            ],
-            temperature=0.1,
-        )
+        response: typing.Final = await client.request_llm_message("Кек, чо как вообще на нарах?")
         print(response)  # noqa: T201
 
 
