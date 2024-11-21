@@ -159,5 +159,5 @@ class OpenAIClient(LLMClient):
                 yield self._iter_partial_responses(response)
         except httpx.HTTPStatusError as exception:
             content: typing.Final = await exception.response.aread()
-            await exception.response.aclose()  # TODO: check if tests will fail if i remove this
+            await exception.response.aclose()
             _handle_status_error(status_code=exception.response.status_code, content=content)

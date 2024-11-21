@@ -19,6 +19,9 @@ class Message(pydantic.BaseModel):
 class LLMError(Exception):
     response_content: bytes
 
+    def __str__(self) -> str:
+        return self.__repr__().removeprefix(self.__class__.__name__)
+
 
 @dataclasses.dataclass
 class OutOfTokensOrSymbolsError(LLMError): ...
