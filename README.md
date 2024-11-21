@@ -155,3 +155,22 @@ client = any_llm_client.get_client(settings.llm_model, ...)
 ### Errors
 
 `any_llm_client.LLMClient.request_llm_response()` and `any_llm_client.LLMClient.stream_llm_partial_responses()` will raise `any_llm_client.LLMError` or `any_llm_client.OutOfTokensOrSymbolsError` when the LLM API responds with a failed HTTP status.
+
+### Timeouts and proxy
+
+Configure timeouts or proxy directly in `httpx.AsyncClient()`:
+
+```python
+import httpx
+
+import any_llm_client
+
+
+async with httpx.AsyncClient(
+    proxies={
+        "https://api.openai.com": httpx.HTTPTransport(proxy="http://localhost:8030"),
+    },
+    timeout=httpx.Timeout(None, connect=5.0),
+) as httpx_client:
+    llm_client = any_llm_client.get_client(..., httpx_client=httpx_client)
+```
