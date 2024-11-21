@@ -5,8 +5,8 @@ import typing
 from http import HTTPStatus
 
 import annotated_types
-import httpx
 import httpx_sse
+import niquests
 import pydantic
 import typing_extensions
 
@@ -92,25 +92,27 @@ def _handle_status_error(*, status_code: int, content: bytes) -> typing.NoReturn
 @dataclasses.dataclass(slots=True, init=False)
 class OpenAIClient(LLMClient):
     config: OpenAIConfig
-    httpx_client: httpx.AsyncClient
+    httpx_client: niquests.AsyncSession
     request_retry: RequestRetryConfig
 
     def __init__(
         self,
         config: OpenAIConfig,
-        httpx_client: httpx.AsyncClient | None = None,
+        httpx_client: niquests.AsyncSession | None = None,
         request_retry: RequestRetryConfig | None = None,
     ) -> None:
         self.config = config
-        self.httpx_client = httpx_client or httpx.AsyncClient()
+        self.httpx_client = httpx_client or niquests.AsyncSession()
         self.request_retry = request_retry or RequestRetryConfig()
 
-    def _build_request(self, payload: dict[str, typing.Any]) -> httpx.Request:
-        return self.httpx_client.build_request(
-            method="POST",
-            url=str(self.config.url),
-            json=payload,
-            headers={"Authorization": f"Bearer {self.config.auth_token}"} if self.config.auth_token else None,
+    def _build_request(self, payload: dict[str, typing.Any]) -> niquests.PreparedRequest:
+        return self.httpx_client.prepare_request(
+            niquests.Request(
+                method="POST",
+                url=str(self.config.url),
+                json=payload,
+                headers={"Authorization": f"Bearer {self.config.auth_token}"} if self.config.auth_token else None,
+            )
         )
 
     def _prepare_messages(self, messages: str | list[Message]) -> list[ChatCompletionsMessage]:
@@ -137,14 +139,21 @@ class OpenAIClient(LLMClient):
                 request_retry=self.request_retry,
                 build_request=lambda: self._build_request(payload),
             )
-        except httpx.HTTPStatusError as exception:
-            _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
+        except niquests.HTTPError as exception:
+            if exception.response and exception.response.status_code and exception.response.content:
+                _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
+            else:
+                raise
         try:
-            return ChatCompletionsNotStreamingResponse.model_validate_json(response.content).choices[0].message.content
+            return (
+                ChatCompletionsNotStreamingResponse.model_validate_json(response.content)  # type: ignore[arg-type]
+                .choices[0]
+                .message.content
+            )
         finally:
             await response.aclose()
 
-    async def _iter_partial_responses(self, response: httpx.Response) -> typing.AsyncIterable[str]:
+    async def _iter_partial_responses(self, response: niquests.AsyncResponse) -> typing.AsyncIterable[str]:
         text_chunks: typing.Final = []
         async for event in httpx_sse.EventSource(response).aiter_sse():
             if event.data == "[DONE]":
@@ -172,13 +181,16 @@ class OpenAIClient(LLMClient):
                 build_request=lambda: self._build_request(payload),
             ) as response:
                 yield self._iter_partial_responses(response)
-        except httpx.HTTPStatusError as exception:
-            content: typing.Final = await exception.response.aread()
-            await exception.response.aclose()
-            _handle_status_error(status_code=exception.response.status_code, content=content)
+        except niquests.HTTPError as exception:
+            if exception.response and exception.response.status_code and exception.response.content:
+                content: typing.Final = exception.response.content
+                exception.response.close()
+                _handle_status_error(status_code=exception.response.status_code, content=content)
+            else:
+                raise
 
     async def __aenter__(self) -> typing_extensions.Self:
-        await self.httpx_client.__aenter__()
+        await self.httpx_client.__aenter__()  # type: ignore[no-untyped-call]
         return self
 
     async def __aexit__(
@@ -187,4 +199,4 @@ class OpenAIClient(LLMClient):
         exc_value: BaseException | None,
         traceback: types.TracebackType | None,
     ) -> None:
-        await self.httpx_client.__aexit__(exc_type=exc_type, exc_value=exc_value, traceback=traceback)
+        await self.httpx_client.__aexit__(exc_type, exc_value, traceback)  # type: ignore[no-untyped-call]

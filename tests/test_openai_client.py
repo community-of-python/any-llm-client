@@ -3,6 +3,7 @@ from unittest import mock
 
 import faker
 import httpx
+import niquests
 import pydantic
 import pytest
 from polyfactory.factories.pydantic_factory import ModelFactory
@@ -36,7 +37,7 @@ class TestOpenAIRequestLLMResponse:
 
         result: typing.Final = await any_llm_client.get_client(
             OpenAIConfigFactory.build(),
-            httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
+            httpx_client=niquests.AsyncSession(transport=httpx.MockTransport(lambda _: response)),
         ).request_llm_message(**LLMFuncRequestFactory.build())
 
         assert result == expected_result
@@ -48,7 +49,7 @@ class TestOpenAIRequestLLMResponse:
         )
         client: typing.Final = any_llm_client.get_client(
             OpenAIConfigFactory.build(),
-            httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
+            httpx_client=niquests.AsyncSession(transport=httpx.MockTransport(lambda _: response)),
         )
 
         with pytest.raises(pydantic.ValidationError):
@@ -91,7 +92,7 @@ class TestOpenAIRequestLLMPartialResponses:
         )
         client: typing.Final = any_llm_client.get_client(
             config,
-            httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
+            httpx_client=niquests.AsyncSession(transport=httpx.MockTransport(lambda _: response)),
         )
 
         result: typing.Final = await consume_llm_partial_responses(client.stream_llm_partial_messages(**func_request))
@@ -107,7 +108,7 @@ class TestOpenAIRequestLLMPartialResponses:
         )
         client: typing.Final = any_llm_client.get_client(
             OpenAIConfigFactory.build(),
-            httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
+            httpx_client=niquests.AsyncSession(transport=httpx.MockTransport(lambda _: response)),
         )
 
         with pytest.raises(pydantic.ValidationError):
@@ -120,7 +121,7 @@ class TestOpenAILLMErrors:
     async def test_fails_with_unknown_error(self, stream: bool, status_code: int) -> None:
         client: typing.Final = any_llm_client.get_client(
             OpenAIConfigFactory.build(),
-            httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: httpx.Response(status_code))),
+            httpx_client=niquests.AsyncSession(transport=httpx.MockTransport(lambda _: httpx.Response(status_code))),
         )
 
         coroutine: typing.Final = (
@@ -145,7 +146,7 @@ class TestOpenAILLMErrors:
         response: typing.Final = httpx.Response(400, content=content)
         client: typing.Final = any_llm_client.get_client(
             OpenAIConfigFactory.build(),
-            httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
+            httpx_client=niquests.AsyncSession(transport=httpx.MockTransport(lambda _: response)),
         )
 
         coroutine: typing.Final = (
