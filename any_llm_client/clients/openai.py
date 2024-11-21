@@ -113,7 +113,7 @@ class OpenAIClient(LLMClient):
             headers={"Authorization": f"Bearer {self.config.auth_token}"} if self.config.auth_token else None,
         )
 
-    def _prepare_messages(self, messages: list[Message]) -> list[ChatCompletionsMessage]:
+    def _prepare_messages(self, messages: str | list[Message]) -> list[ChatCompletionsMessage]:
         initial_messages: typing.Final = (
             ChatCompletionsMessage(role=one_message.role, content=one_message.text) for one_message in messages
         )
@@ -123,7 +123,7 @@ class OpenAIClient(LLMClient):
             else list(initial_messages)
         )
 
-    async def request_llm_message(self, *, messages: list[Message], temperature: float) -> str:
+    async def request_llm_message(self, *, messages: str | list[Message], temperature: float) -> str:
         payload: typing.Final = ChatCompletionsRequest(
             stream=False,
             model=self.config.model_name,
@@ -156,7 +156,7 @@ class OpenAIClient(LLMClient):
 
     @contextlib.asynccontextmanager
     async def stream_llm_partial_messages(
-        self, *, messages: list[Message], temperature: float
+        self, *, messages: str | list[Message], temperature: float
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
         payload: typing.Final = ChatCompletionsRequest(
             stream=True,

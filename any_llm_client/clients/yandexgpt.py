@@ -37,7 +37,7 @@ class YandexGPTRequest(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(protected_namespaces=())
     model_uri: str = pydantic.Field(alias="modelUri")
     completion_options: YandexGPTCompletionOptions = pydantic.Field(alias="completionOptions")
-    messages: list[Message]
+    messages: str | list[Message]
 
 
 class YandexGPTAlternative(pydantic.BaseModel):
@@ -85,7 +85,9 @@ class YandexGPTClient(LLMClient):
             headers={"Authorization": self.config.auth_header, "x-data-logging-enabled": "false"},
         )
 
-    def _prepare_payload(self, *, messages: list[Message], temperature: float, stream: bool) -> dict[str, typing.Any]:
+    def _prepare_payload(
+        self, *, messages: str | list[Message], temperature: float, stream: bool
+    ) -> dict[str, typing.Any]:
         return YandexGPTRequest(
             modelUri=f"gpt://{self.config.folder_id}/{self.config.model_name}/{self.config.model_version}",
             completionOptions=YandexGPTCompletionOptions(
@@ -94,7 +96,7 @@ class YandexGPTClient(LLMClient):
             messages=messages,
         ).model_dump(mode="json", by_alias=True)
 
-    async def request_llm_message(self, *, messages: list[Message], temperature: float) -> str:
+    async def request_llm_message(self, *, messages: str | list[Message], temperature: float) -> str:
         payload: typing.Final = self._prepare_payload(messages=messages, temperature=temperature, stream=False)
 
         try:
@@ -115,7 +117,7 @@ class YandexGPTClient(LLMClient):
 
     @contextlib.asynccontextmanager
     async def stream_llm_partial_messages(
-        self, *, messages: list[Message], temperature: float
+        self, *, messages: str | list[Message], temperature: float
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
         payload: typing.Final = self._prepare_payload(messages=messages, temperature=temperature, stream=True)
 
