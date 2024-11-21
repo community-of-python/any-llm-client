@@ -1,6 +1,6 @@
 # any-llm-client
 
-Unified and lightweight async Python API for communicating with LLMs. Supports multiple providers, including OpenAI Chat Completions API (and any OpenAI-compatible API, such as Ollama and vLLM) and YandexGPT API.
+A unified and lightweight asynchronous Python API for communicating with LLMs. It supports multiple providers, including OpenAI Chat Completions API (and any OpenAI-compatible API, such as Ollama and vLLM) and YandexGPT API.
 
 ## How To Use
 
