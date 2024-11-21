@@ -17,7 +17,7 @@ from any_llm_client.retry import RequestRetryConfig
 
 class OpenAIConfig(LLMConfig):
     if typing.TYPE_CHECKING:
-        url: str
+        url: str  # pragma: no cover
     else:
         url: pydantic.HttpUrl
     auth_token: str | None = None

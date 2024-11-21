@@ -8,7 +8,7 @@ import typing_extensions
 from any_llm_client.core import LLMClient, LLMConfig, Message
 
 
-class MockLLMConfig(LLMConfig):
+class MockLLMConfig(LLMConfig): # TODO: improve: allow optional. Also config dhouln't be kw_only
     response_message: str
     stream_messages: list[str]
     api_type: typing.Literal["mock"] = "mock"

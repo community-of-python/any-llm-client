@@ -19,8 +19,8 @@ class YandexGPTConfig(LLMConfig):
         url: str = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"  # pragma: no cover
     else:
         url: pydantic.HttpUrl = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
-    auth_header: str
-    folder_id: str
+    auth_header: str | None = None
+    folder_id: str | None = None
     model_name: str
     model_version: str = "latest"
     max_tokens: int = 7400
@@ -78,12 +78,10 @@ class YandexGPTClient(LLMClient):
         self.request_retry = request_retry or RequestRetryConfig()
 
     def _build_request(self, payload: dict[str, typing.Any]) -> httpx.Request:
-        return self.httpx_client.build_request(
-            method="POST",
-            url=str(self.config.url),
-            json=payload,
-            headers={"Authorization": self.config.auth_header, "x-data-logging-enabled": "false"},
-        )
+        headers: typing.Final = {"x-data-logging-enabled": "false"}
+        if self.config.auth_header:
+            headers["Authorization"] = self.config.auth_header
+        return self.httpx_client.build_request(method="POST", url=str(self.config.url), json=payload, headers=headers)
 
     def _prepare_payload(
         self, *, messages: str | list[Message], temperature: float = 0.2, stream: bool
