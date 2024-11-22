@@ -10,7 +10,7 @@ import httpx
 import pydantic
 import typing_extensions
 
-from any_llm_client.core import LLMClient, LLMConfig, LLMError, Message, OutOfTokensOrSymbolsError
+from any_llm_client.core import LLMClient, LLMConfig, LLMError, Message, OutOfTokensOrSymbolsError, UserMessage
 from any_llm_client.http import get_http_client_from_kwargs, make_http_request, make_streaming_http_request
 from any_llm_client.retry import RequestRetryConfig
 
@@ -98,7 +98,7 @@ class YandexGPTClient(LLMClient):
     def _prepare_payload(
         self, *, messages: str | list[Message], temperature: float = 0.2, stream: bool
     ) -> dict[str, typing.Any]:
-        messages = [Message(role="user", text=messages)] if isinstance(messages, str) else messages
+        messages = [UserMessage(messages)] if isinstance(messages, str) else messages
         return YandexGPTRequest(
             modelUri=f"gpt://{self.config.folder_id}/{self.config.model_name}/{self.config.model_version}",
             completionOptions=YandexGPTCompletionOptions(

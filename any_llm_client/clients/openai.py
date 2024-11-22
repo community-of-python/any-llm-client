@@ -11,7 +11,15 @@ import httpx_sse
 import pydantic
 import typing_extensions
 
-from any_llm_client.core import LLMClient, LLMConfig, LLMError, Message, MessageRole, OutOfTokensOrSymbolsError
+from any_llm_client.core import (
+    LLMClient,
+    LLMConfig,
+    LLMError,
+    Message,
+    MessageRole,
+    OutOfTokensOrSymbolsError,
+    UserMessage,
+)
 from any_llm_client.http import get_http_client_from_kwargs, make_http_request, make_streaming_http_request
 from any_llm_client.retry import RequestRetryConfig
 
@@ -44,7 +52,7 @@ class ChatCompletionsRequest(pydantic.BaseModel):
 
 
 class OneStreamingChoiceDelta(pydantic.BaseModel):
-    role: typing.Literal["assistant"] | None = None
+    role: typing.Literal[MessageRole.assistant] | None = None
     content: str | None = None
 
 
@@ -67,7 +75,7 @@ class ChatCompletionsNotStreamingResponse(pydantic.BaseModel):
 def _make_user_assistant_alternate_messages(
     messages: typing.Iterable[ChatCompletionsMessage],
 ) -> typing.Iterable[ChatCompletionsMessage]:
-    current_message_role: MessageRole = "user"
+    current_message_role = MessageRole.user
     current_message_content_chunks = []
 
     for one_message in messages:
@@ -75,8 +83,8 @@ def _make_user_assistant_alternate_messages(
             continue
 
         if (
-            one_message.role in {"system", "user"} and current_message_role == "user"
-        ) or one_message.role == current_message_role == "assistant":
+            one_message.role in {MessageRole.system, MessageRole.user} and current_message_role == MessageRole.user
+        ) or one_message.role == current_message_role == MessageRole.assistant:
             current_message_content_chunks.append(one_message.content)
         else:
             if current_message_content_chunks:
@@ -122,7 +130,7 @@ class OpenAIClient(LLMClient):
         )
 
     def _prepare_messages(self, messages: str | list[Message]) -> list[ChatCompletionsMessage]:
-        messages = [Message(role="user", text=messages)] if isinstance(messages, str) else messages
+        messages = [UserMessage(messages)] if isinstance(messages, str) else messages
         initial_messages: typing.Final = (
             ChatCompletionsMessage(role=one_message.role, content=one_message.text) for one_message in messages
         )

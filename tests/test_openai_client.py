@@ -28,7 +28,11 @@ class TestOpenAIRequestLLMResponse:
             200,
             json=ChatCompletionsNotStreamingResponse(
                 choices=[
-                    OneNotStreamingChoice(message=ChatCompletionsMessage(role="assistant", content=expected_result))
+                    OneNotStreamingChoice(
+                        message=ChatCompletionsMessage(
+                            role=any_llm_client.MessageRole.assistant, content=expected_result
+                        )
+                    )
                 ]
             ).model_dump(mode="json"),
         )
@@ -55,11 +59,11 @@ class TestOpenAIRequestLLMResponse:
 class TestOpenAIRequestLLMPartialResponses:
     async def test_ok(self, faker: faker.Faker) -> None:
         generated_messages: typing.Final = [
-            OneStreamingChoiceDelta(role="assistant"),
+            OneStreamingChoiceDelta(role=any_llm_client.MessageRole.assistant),
             OneStreamingChoiceDelta(content="H"),
             OneStreamingChoiceDelta(content="i"),
             OneStreamingChoiceDelta(content=" t"),
-            OneStreamingChoiceDelta(role="assistant", content="here"),
+            OneStreamingChoiceDelta(role=any_llm_client.MessageRole.assistant, content="here"),
             OneStreamingChoiceDelta(),
             OneStreamingChoiceDelta(content=". How is you"),
             OneStreamingChoiceDelta(content="r day?"),
@@ -171,12 +175,17 @@ class TestOpenAIMessageAlternation:
                 ],
                 [],
             ),
-            ([any_llm_client.SystemMessage("Be nice")], [ChatCompletionsMessage(role="user", content="Be nice")]),
+            (
+                [any_llm_client.SystemMessage("Be nice")],
+                [ChatCompletionsMessage(role=any_llm_client.MessageRole.user, content="Be nice")],
+            ),
             (
                 [any_llm_client.UserMessage("Hi there"), any_llm_client.AssistantMessage("Hi! How can I help you?")],
                 [
-                    ChatCompletionsMessage(role="user", content="Hi there"),
-                    ChatCompletionsMessage(role="assistant", content="Hi! How can I help you?"),
+                    ChatCompletionsMessage(role=any_llm_client.MessageRole.user, content="Hi there"),
+                    ChatCompletionsMessage(
+                        role=any_llm_client.MessageRole.assistant, content="Hi! How can I help you?"
+                    ),
                 ],
             ),
             (
@@ -186,13 +195,15 @@ class TestOpenAIMessageAlternation:
                     any_llm_client.AssistantMessage("Hi! How can I help you?"),
                 ],
                 [
-                    ChatCompletionsMessage(role="user", content="Hi there"),
-                    ChatCompletionsMessage(role="assistant", content="Hi! How can I help you?"),
+                    ChatCompletionsMessage(role=any_llm_client.MessageRole.user, content="Hi there"),
+                    ChatCompletionsMessage(
+                        role=any_llm_client.MessageRole.assistant, content="Hi! How can I help you?"
+                    ),
                 ],
             ),
             (
                 [any_llm_client.SystemMessage("Be nice"), any_llm_client.UserMessage("Hi there")],
-                [ChatCompletionsMessage(role="user", content="Be nice\n\nHi there")],
+                [ChatCompletionsMessage(role=any_llm_client.MessageRole.user, content="Be nice\n\nHi there")],
             ),
             (
                 [
@@ -210,14 +221,16 @@ class TestOpenAIMessageAlternation:
                     any_llm_client.UserMessage("Hmmm..."),
                 ],
                 [
-                    ChatCompletionsMessage(role="user", content="Be nice"),
+                    ChatCompletionsMessage(role=any_llm_client.MessageRole.user, content="Be nice"),
                     ChatCompletionsMessage(
-                        role="assistant",
+                        role=any_llm_client.MessageRole.assistant,
                         content="Hi!\n\nI'm your answer to everything.\n\nHow can I help you?",
                     ),
-                    ChatCompletionsMessage(role="user", content="Hi there\n\nWhy is the sky blue?"),
-                    ChatCompletionsMessage(role="assistant", content="Well..."),
-                    ChatCompletionsMessage(role="user", content="Hmmm..."),
+                    ChatCompletionsMessage(
+                        role=any_llm_client.MessageRole.user, content="Hi there\n\nWhy is the sky blue?"
+                    ),
+                    ChatCompletionsMessage(role=any_llm_client.MessageRole.assistant, content="Well..."),
+                    ChatCompletionsMessage(role=any_llm_client.MessageRole.user, content="Hmmm..."),
                 ],
             ),
         ],
@@ -237,6 +250,6 @@ class TestOpenAIMessageAlternation:
         assert client._prepare_messages(  # noqa: SLF001
             [any_llm_client.SystemMessage("Be nice"), any_llm_client.UserMessage("Hi there")]
         ) == [
-            ChatCompletionsMessage(role="system", content="Be nice"),
-            ChatCompletionsMessage(role="user", content="Hi there"),
+            ChatCompletionsMessage(role=any_llm_client.MessageRole.system, content="Be nice"),
+            ChatCompletionsMessage(role=any_llm_client.MessageRole.user, content="Hi there"),
         ]
