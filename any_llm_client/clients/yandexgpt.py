@@ -43,7 +43,7 @@ class YandexGPTCompletionOptions(pydantic.BaseModel):
 
 
 class YandexGPTRequest(pydantic.BaseModel):
-    model_config = pydantic.ConfigDict(protected_namespaces=())
+    model_config = pydantic.ConfigDict(protected_namespaces=(), extra="allow")
     model_uri: str = pydantic.Field(alias="modelUri")
     completion_options: YandexGPTCompletionOptions = pydantic.Field(alias="completionOptions")
     messages: list[Message]
@@ -96,7 +96,12 @@ class YandexGPTClient(LLMClient):
         )
 
     def _prepare_payload(
-        self, *, messages: str | list[Message], temperature: float = 0.2, stream: bool
+        self,
+        *,
+        messages: str | list[Message],
+        temperature: float = 0.2,
+        stream: bool,
+        extra: dict[str, typing.Any] | None,
     ) -> dict[str, typing.Any]:
         messages = [UserMessage(messages)] if isinstance(messages, str) else messages
         return YandexGPTRequest(
@@ -105,10 +110,15 @@ class YandexGPTClient(LLMClient):
                 stream=stream, temperature=temperature, maxTokens=self.config.max_tokens
             ),
             messages=messages,
+            **extra or {},
         ).model_dump(mode="json", by_alias=True)
 
-    async def request_llm_message(self, messages: str | list[Message], temperature: float = 0.2) -> str:
-        payload: typing.Final = self._prepare_payload(messages=messages, temperature=temperature, stream=False)
+    async def request_llm_message(
+        self, messages: str | list[Message], *, temperature: float = 0.2, extra: dict[str, typing.Any] | None = None
+    ) -> str:
+        payload: typing.Final = self._prepare_payload(
+            messages=messages, temperature=temperature, stream=False, extra=extra
+        )
 
         try:
             response: typing.Final = await make_http_request(
@@ -128,9 +138,11 @@ class YandexGPTClient(LLMClient):
 
     @contextlib.asynccontextmanager
     async def stream_llm_partial_messages(
-        self, messages: str | list[Message], temperature: float = 0.2
+        self, messages: str | list[Message], *, temperature: float = 0.2, extra: dict[str, typing.Any] | None = None
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
-        payload: typing.Final = self._prepare_payload(messages=messages, temperature=temperature, stream=True)
+        payload: typing.Final = self._prepare_payload(
+            messages=messages, temperature=temperature, stream=True, extra=extra
+        )
 
         try:
             async with make_streaming_http_request(
