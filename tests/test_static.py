@@ -2,9 +2,14 @@ import inspect
 import typing
 
 import faker
+import pydantic
+import pytest
 import stamina
+from polyfactory.factories.pydantic_factory import ModelFactory
 
 import any_llm_client
+from any_llm_client.clients.openai import ChatCompletionsRequest
+from any_llm_client.clients.yandexgpt import YandexGPTRequest
 from tests.conftest import LLMFuncRequest
 
 
@@ -40,3 +45,13 @@ def test_llm_func_request_has_same_annotations_as_llm_client_methods() -> None:
                 annotations.pop(one_ignored_prop)
 
     assert all(annotations == all_annotations[0] for annotations in all_annotations)
+
+
+@pytest.mark.parametrize("model_type", [YandexGPTRequest, ChatCompletionsRequest])
+def test_dumped_llm_request_payload_dump_has_extra_data(model_type: type[pydantic.BaseModel]) -> None:
+    extra: typing.Final = {"hi": "there", "hi-hi": "there-there"}
+    generated_data: typing.Final = ModelFactory.create_factory(model_type).build(**extra).model_dump(by_alias=True)  # type: ignore[arg-type]
+    dumped_model: typing.Final = model_type(**{**generated_data, **extra}).model_dump(mode="json", by_alias=True)
+
+    assert dumped_model["hi"] == "there"
+    assert dumped_model["hi-hi"] == "there-there"
