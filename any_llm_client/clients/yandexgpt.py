@@ -1,5 +1,6 @@
 import contextlib
 import dataclasses
+import os
 import types
 import typing
 from http import HTTPStatus
@@ -14,13 +15,21 @@ from any_llm_client.http import get_http_client_from_kwargs, make_http_request, 
 from any_llm_client.retry import RequestRetryConfig
 
 
+YANDEXGPT_AUTH_HEADER_ENV_NAME: typing.Final = "ANY_LLM_CLIENT_YANDEXGPT_AUTH_HEADER"
+YANDEXGPT_FOLDER_ID_ENV_NAME: typing.Final = "ANY_LLM_CLIENT_YANDEXGPT_FOLDER_ID"
+
+
 class YandexGPTConfig(LLMConfig):
     if typing.TYPE_CHECKING:
         url: str = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"  # pragma: no cover
     else:
         url: pydantic.HttpUrl = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
-    auth_header: str | None = None
-    folder_id: str | None = None
+    auth_header: str = pydantic.Field(  # type: ignore[assignment]
+        default_factory=lambda: os.environ.get(YANDEXGPT_AUTH_HEADER_ENV_NAME), validate_default=True
+    )
+    folder_id: str = pydantic.Field(  # type: ignore[assignment]
+        default_factory=lambda: os.environ.get(YANDEXGPT_FOLDER_ID_ENV_NAME), validate_default=True
+    )
     model_name: str
     model_version: str = "latest"
     max_tokens: int = 7400
@@ -79,10 +88,12 @@ class YandexGPTClient(LLMClient):
         self.httpx_client = get_http_client_from_kwargs(httpx_kwargs)
 
     def _build_request(self, payload: dict[str, typing.Any]) -> httpx.Request:
-        headers: typing.Final = {"x-data-logging-enabled": "false"}
-        if self.config.auth_header:
-            headers["Authorization"] = self.config.auth_header
-        return self.httpx_client.build_request(method="POST", url=str(self.config.url), json=payload, headers=headers)
+        return self.httpx_client.build_request(
+            method="POST",
+            url=str(self.config.url),
+            json=payload,
+            headers={"Authorization": self.config.auth_header, "x-data-logging-enabled": "false"},
+        )
 
     def _prepare_payload(
         self, *, messages: str | list[Message], temperature: float = 0.2, stream: bool
