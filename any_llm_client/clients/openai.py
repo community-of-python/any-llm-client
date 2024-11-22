@@ -21,7 +21,7 @@ OPENAI_AUTH_TOKEN_ENV_NAME: typing.Final = "ANY_LLM_CLIENT_OPENAI_AUTH_TOKEN"
 
 class OpenAIConfig(LLMConfig):
     if typing.TYPE_CHECKING:
-        url: str  # pragma: no cover
+        url: str
     else:
         url: pydantic.HttpUrl
     auth_token: str | None = pydantic.Field(default_factory=lambda: os.environ.get(OPENAI_AUTH_TOKEN_ENV_NAME))

@@ -21,7 +21,7 @@ YANDEXGPT_FOLDER_ID_ENV_NAME: typing.Final = "ANY_LLM_CLIENT_YANDEXGPT_FOLDER_ID
 
 class YandexGPTConfig(LLMConfig):
     if typing.TYPE_CHECKING:
-        url: str = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"  # pragma: no cover
+        url: str = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
     else:
         url: pydantic.HttpUrl = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
     auth_header: str = pydantic.Field(  # type: ignore[assignment]

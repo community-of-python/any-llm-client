@@ -94,4 +94,4 @@ addopts = "--cov"
 [tool.coverage.report]
 skip_covered = true
 show_missing = true
-exclude_also = ["if TYPE_CHECKING:"]
+exclude_also = ["if typing.TYPE_CHECKING:"]
