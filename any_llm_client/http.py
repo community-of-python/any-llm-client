@@ -19,6 +19,8 @@ def get_http_client_from_kwargs(kwargs: dict[str, typing.Any]) -> niquests.Async
 
     timeout: typing.Final = kwargs_with_defaults.pop("timeout")
     session: typing.Final = niquests.AsyncSession(**kwargs_with_defaults)
+    if proxies := kwargs.get("proxies"):
+        session.proxies = proxies
     session.timeout = timeout
     return session
 
