@@ -10,7 +10,7 @@ import pydantic
 import typing_extensions
 
 from any_llm_client.core import LLMClient, LLMConfig, LLMError, Message, OutOfTokensOrSymbolsError
-from any_llm_client.http import make_http_request, make_streaming_http_request
+from any_llm_client.http import get_http_client_from_kwargs, make_http_request, make_streaming_http_request
 from any_llm_client.retry import RequestRetryConfig
 
 
@@ -70,12 +70,13 @@ class YandexGPTClient(LLMClient):
     def __init__(
         self,
         config: YandexGPTConfig,
-        httpx_client: httpx.AsyncClient | None = None,
+        *,
         request_retry: RequestRetryConfig | None = None,
+        **httpx_kwargs: typing.Any,  # noqa: ANN401
     ) -> None:
         self.config = config
-        self.httpx_client = httpx_client or httpx.AsyncClient()
         self.request_retry = request_retry or RequestRetryConfig()
+        self.httpx_client = get_http_client_from_kwargs(httpx_kwargs)
 
     def _build_request(self, payload: dict[str, typing.Any]) -> httpx.Request:
         headers: typing.Final = {"x-data-logging-enabled": "false"}

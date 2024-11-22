@@ -1,8 +1,6 @@
 import functools
 import typing
 
-import httpx
-
 from any_llm_client.clients.mock import MockLLMClient, MockLLMConfig
 from any_llm_client.clients.openai import OpenAIClient, OpenAIConfig
 from any_llm_client.clients.yandexgpt import YandexGPTClient, YandexGPTConfig
@@ -18,8 +16,8 @@ if typing.TYPE_CHECKING:
     def get_client(
         config: AnyLLMConfig,
         *,
-        httpx_client: httpx.AsyncClient | None = None,
         request_retry: RequestRetryConfig | None = None,
+        **httpx_kwargs: typing.Any,  # noqa: ANN401
     ) -> LLMClient: ...  # pragma: no cover
 else:
 
@@ -27,8 +25,8 @@ else:
     def get_client(
         config: typing.Any,  # noqa: ANN401, ARG001
         *,
-        httpx_client: httpx.AsyncClient | None = None,  # noqa: ARG001
         request_retry: RequestRetryConfig | None = None,  # noqa: ARG001
+        **httpx_kwargs: typing.Any,  # noqa: ANN401, ARG001
     ) -> LLMClient:
         raise AssertionError("unknown LLM config type")
 
@@ -36,25 +34,25 @@ else:
     def _(
         config: YandexGPTConfig,
         *,
-        httpx_client: httpx.AsyncClient | None = None,
         request_retry: RequestRetryConfig | None = None,
+        **httpx_kwargs: typing.Any,  # noqa: ANN401
     ) -> LLMClient:
-        return YandexGPTClient(config=config, httpx_client=httpx_client, request_retry=request_retry)
+        return YandexGPTClient(config=config, request_retry=request_retry, **httpx_kwargs)
 
     @get_client.register
     def _(
         config: OpenAIConfig,
         *,
-        httpx_client: httpx.AsyncClient | None = None,
         request_retry: RequestRetryConfig | None = None,
+        **httpx_kwargs: typing.Any,  # noqa: ANN401
     ) -> LLMClient:
-        return OpenAIClient(config=config, httpx_client=httpx_client, request_retry=request_retry)
+        return OpenAIClient(config=config, request_retry=request_retry, **httpx_kwargs)
 
     @get_client.register
     def _(
         config: MockLLMConfig,
         *,
-        httpx_client: httpx.AsyncClient | None = None,  # noqa: ARG001
         request_retry: RequestRetryConfig | None = None,  # noqa: ARG001
+        **httpx_kwargs: typing.Any,  # noqa: ANN401, ARG001
     ) -> LLMClient:
         return MockLLMClient(config=config)

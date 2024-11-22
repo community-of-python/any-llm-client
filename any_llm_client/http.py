@@ -8,6 +8,15 @@ import stamina
 from any_llm_client.retry import RequestRetryConfig
 
 
+DEFAULT_HTTP_TIMEOUT: typing.Final = httpx.Timeout(None, connect=5.0)
+
+
+def get_http_client_from_kwargs(kwargs: dict[str, typing.Any]) -> httpx.AsyncClient:
+    kwargs_with_defaults: typing.Final = kwargs.copy()
+    kwargs_with_defaults.setdefault("timeout", DEFAULT_HTTP_TIMEOUT)
+    return httpx.AsyncClient(**kwargs_with_defaults)
+
+
 async def make_http_request(
     *,
     httpx_client: httpx.AsyncClient,
