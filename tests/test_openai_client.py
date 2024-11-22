@@ -1,5 +1,4 @@
 import typing
-from unittest import mock
 
 import faker
 import httpx
@@ -35,8 +34,7 @@ class TestOpenAIRequestLLMResponse:
         )
 
         result: typing.Final = await any_llm_client.get_client(
-            OpenAIConfigFactory.build(),
-            httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
+            OpenAIConfigFactory.build(), transport=httpx.MockTransport(lambda _: response)
         ).request_llm_message(**LLMFuncRequestFactory.build())
 
         assert result == expected_result
@@ -47,8 +45,7 @@ class TestOpenAIRequestLLMResponse:
             json=ChatCompletionsNotStreamingResponse.model_construct(choices=[]).model_dump(mode="json"),
         )
         client: typing.Final = any_llm_client.get_client(
-            OpenAIConfigFactory.build(),
-            httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
+            OpenAIConfigFactory.build(), transport=httpx.MockTransport(lambda _: response)
         )
 
         with pytest.raises(pydantic.ValidationError):
@@ -89,10 +86,7 @@ class TestOpenAIRequestLLMPartialResponses:
         response: typing.Final = httpx.Response(
             200, headers={"Content-Type": "text/event-stream"}, content=response_content
         )
-        client: typing.Final = any_llm_client.get_client(
-            config,
-            httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
-        )
+        client: typing.Final = any_llm_client.get_client(config, transport=httpx.MockTransport(lambda _: response))
 
         result: typing.Final = await consume_llm_partial_responses(client.stream_llm_partial_messages(**func_request))
 
@@ -106,8 +100,7 @@ class TestOpenAIRequestLLMPartialResponses:
             200, headers={"Content-Type": "text/event-stream"}, content=response_content
         )
         client: typing.Final = any_llm_client.get_client(
-            OpenAIConfigFactory.build(),
-            httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
+            OpenAIConfigFactory.build(), transport=httpx.MockTransport(lambda _: response)
         )
 
         with pytest.raises(pydantic.ValidationError):
@@ -119,8 +112,7 @@ class TestOpenAILLMErrors:
     @pytest.mark.parametrize("status_code", [400, 500])
     async def test_fails_with_unknown_error(self, stream: bool, status_code: int) -> None:
         client: typing.Final = any_llm_client.get_client(
-            OpenAIConfigFactory.build(),
-            httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: httpx.Response(status_code))),
+            OpenAIConfigFactory.build(), transport=httpx.MockTransport(lambda _: httpx.Response(status_code))
         )
 
         coroutine: typing.Final = (
@@ -144,8 +136,7 @@ class TestOpenAILLMErrors:
     async def test_fails_with_out_of_tokens_error(self, stream: bool, content: bytes | None) -> None:
         response: typing.Final = httpx.Response(400, content=content)
         client: typing.Final = any_llm_client.get_client(
-            OpenAIConfigFactory.build(),
-            httpx_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: response)),
+            OpenAIConfigFactory.build(), transport=httpx.MockTransport(lambda _: response)
         )
 
         coroutine: typing.Final = (
@@ -244,14 +235,13 @@ class TestOpenAIMessageAlternation:
         self, messages: list[any_llm_client.Message], expected_result: list[ChatCompletionsMessage]
     ) -> None:
         client: typing.Final = any_llm_client.OpenAIClient(
-            config=OpenAIConfigFactory.build(force_user_assistant_message_alternation=True), httpx_client=mock.Mock()
+            OpenAIConfigFactory.build(force_user_assistant_message_alternation=True)
         )
         assert client._prepare_messages(messages) == expected_result  # noqa: SLF001
 
     def test_without_alternation(self) -> None:
         client: typing.Final = any_llm_client.OpenAIClient(
-            config=OpenAIConfigFactory.build(force_user_assistant_message_alternation=False),
-            httpx_client=mock.Mock(),
+            OpenAIConfigFactory.build(force_user_assistant_message_alternation=False)
         )
         assert client._prepare_messages(  # noqa: SLF001
             [
