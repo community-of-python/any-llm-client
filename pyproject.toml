@@ -32,12 +32,7 @@ dev = [
     "pytest-cov",
     "pytest",
 ]
-lint = [
-    {include="dev"},
-    "auto-typing-final",
-    "mypy",
-    "ruff",
-]
+lint = [{ include-group = "dev" }, "auto-typing-final", "mypy", "ruff"]
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
@@ -73,8 +68,6 @@ ignore = [
     "D213",
     "G004",
     "FA",
-    "ANN101",
-    "ANN102",
     "COM812",
     "ISC001",
 ]
