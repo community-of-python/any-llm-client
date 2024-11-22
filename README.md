@@ -111,7 +111,7 @@ Instead of passing credentials directly, you can set corresponding environment v
 - OpenAI: `ANY_LLM_CLIENT_OPENAI_AUTH_TOKEN`,
 - YandexGPT: `ANY_LLM_CLIENT_YANDEXGPT_AUTH_HEADER`, `ANY_LLM_CLIENT_YANDEXGPT_FOLDER_ID`.
 
-##### Dynamic LLM config with [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/)
+##### LLM model config (with [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/))
 
 ```python
 import os
