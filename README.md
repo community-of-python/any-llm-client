@@ -72,7 +72,7 @@ Note that this will yield partial growing message, not message chunks, for examp
 
 ### Passing chat history and temperature
 
-You can pass `list[any_llm_client.Message]` instead of `str` as the first argument, and set `temperature`:
+You can pass list of messages instead of `str` as the first argument, and set `temperature`:
 
 ```python
 async with (
