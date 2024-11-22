@@ -6,7 +6,6 @@ import typing
 from http import HTTPStatus
 
 import annotated_types
-import httpx_sse
 import niquests
 import pydantic
 import typing_extensions
@@ -168,11 +167,18 @@ class OpenAIClient(LLMClient):
                 .message.content
             )
         finally:
-            await response.aclose()
+            response.close()
 
     async def _iter_partial_responses(self, response: niquests.AsyncResponse) -> typing.AsyncIterable[str]:
+        from httpx_sse._decoders import SSEDecoder
+
+        decoder: typing.Final = SSEDecoder()
         text_chunks: typing.Final = []
-        async for event in httpx_sse.EventSource(response).aiter_sse():
+        async for line in response.iter_lines():  # type: ignore[attr-defined]
+            line_str = line.decode().rstrip("\n")
+            event = decoder.decode(line_str)
+            if not event:
+                continue
             if event.data == "[DONE]":
                 break
             validated_response = ChatCompletionsStreamingEvent.model_validate_json(event.data)
