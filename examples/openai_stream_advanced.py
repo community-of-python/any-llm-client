@@ -11,8 +11,8 @@ async def main() -> None:
         any_llm_client.get_client(config) as client,
         client.stream_llm_partial_messages(
             messages=[
-                any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
-                any_llm_client.Message(role="user", text="Кек, чо как вообще на нарах?"),
+                any_llm_client.SystemMessage("Ты — опытный ассистент"),
+                any_llm_client.UserMessage("Кек, чо как вообще на нарах?"),
             ],
             temperature=1.0,
         ) as partial_messages,

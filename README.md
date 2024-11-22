@@ -72,15 +72,15 @@ Note that this will yield partial growing message, not message chunks, for examp
 
 ### Passing chat history and temperature
 
-You can pass `list[any_llm_client.Message]` instead of `str` as the first argument, and set `temperature`:
+You can pass list of messages instead of `str` as the first argument, and set `temperature`:
 
 ```python
 async with (
     any_llm_client.get_client(config) as client,
     client.stream_llm_partial_messages(
         messages=[
-            any_llm_client.Message(role="system", text="Ты — опытный ассистент"),
-            any_llm_client.Message(role="user", text="Кек, чо как вообще на нарах?"),
+            any_llm_client.SystemMessage("Ты — опытный ассистент"),
+            any_llm_client.UserMessage("Кек, чо как вообще на нарах?"),
         ],
         temperature=1.0,
     ) as partial_messages,

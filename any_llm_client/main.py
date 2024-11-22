@@ -18,7 +18,7 @@ if typing.TYPE_CHECKING:
         *,
         request_retry: RequestRetryConfig | None = None,
         **httpx_kwargs: typing.Any,  # noqa: ANN401
-    ) -> LLMClient: ...  # pragma: no cover
+    ) -> LLMClient: ...
 else:
 
     @functools.singledispatch
