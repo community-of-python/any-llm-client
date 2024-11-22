@@ -14,14 +14,14 @@ DEFAULT_HTTP_TIMEOUT: typing.Final = urllib3.Timeout(total=None, connect=5.0)
 
 
 def get_http_client_from_kwargs(kwargs: dict[str, typing.Any]) -> niquests.AsyncSession:
-    kwargs_with_defaults: typing.Final = kwargs.copy()
-    kwargs_with_defaults.setdefault("timeout", DEFAULT_HTTP_TIMEOUT)
+    modified_kwargs: typing.Final = kwargs.copy()
+    timeout: typing.Final = modified_kwargs.pop("timeout", DEFAULT_HTTP_TIMEOUT)
+    proxies: typing.Final = modified_kwargs.pop("proxies", None)
 
-    timeout: typing.Final = kwargs_with_defaults.pop("timeout")
-    session: typing.Final = niquests.AsyncSession(**kwargs_with_defaults)
-    if proxies := kwargs.get("proxies"):
+    session: typing.Final = niquests.AsyncSession(**modified_kwargs)
+    session.custom_timeout = timeout  # type: ignore[attr-defined]
+    if proxies:
         session.proxies = proxies
-    session.timeout = timeout
     return session
 
 
@@ -33,7 +33,7 @@ async def make_http_request(
 ) -> niquests.Response:
     @stamina.retry(on=niquests.HTTPError, **dataclasses.asdict(request_retry))
     async def make_request_with_retries() -> niquests.Response:
-        response: typing.Final = await httpx_client.send(build_request(), timeout=httpx_client.timeout)
+        response: typing.Final = await httpx_client.send(build_request(), timeout=httpx_client.custom_timeout)  # type: ignore[attr-defined]
         response.raise_for_status()
         return response
 
@@ -49,7 +49,11 @@ async def make_streaming_http_request(
 ) -> typing.AsyncIterator[niquests.AsyncResponse]:
     @stamina.retry(on=httpx.HTTPError, **dataclasses.asdict(request_retry))
     async def make_request_with_retries() -> niquests.AsyncResponse:
-        response: typing.Final = await httpx_client.send(build_request(), stream=True, timeout=httpx_client.timeout)
+        response: typing.Final = await httpx_client.send(
+            build_request(),
+            stream=True,
+            timeout=httpx_client.custom_timeout,  # type: ignore[attr-defined]
+        )
         response.raise_for_status()
         return response  # type: ignore[return-value]
 
