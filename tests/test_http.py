@@ -11,9 +11,9 @@ class TestGetHttpClientFromKwargs:
         original_kwargs: typing.Final = {"mounts": {"http://": None}}
         passed_kwargs: typing.Final = copy.deepcopy(original_kwargs)
 
-        result: typing.Final = get_http_client_from_kwargs(passed_kwargs)
+        client: typing.Final = get_http_client_from_kwargs(passed_kwargs)
 
-        assert result.timeout == DEFAULT_HTTP_TIMEOUT
+        assert client.timeout == DEFAULT_HTTP_TIMEOUT
         assert original_kwargs == passed_kwargs
 
     def test_http_timeout_is_not_modified_if_set(self) -> None:
@@ -21,7 +21,7 @@ class TestGetHttpClientFromKwargs:
         original_kwargs: typing.Final = {"mounts": {"http://": None}, "timeout": timeout}
         passed_kwargs: typing.Final = copy.deepcopy(original_kwargs)
 
-        result: typing.Final = get_http_client_from_kwargs(passed_kwargs)
+        client: typing.Final = get_http_client_from_kwargs(passed_kwargs)
 
-        assert result.timeout == timeout
+        assert client.timeout == timeout
         assert original_kwargs == passed_kwargs

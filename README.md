@@ -102,7 +102,16 @@ config = any_llm_client.MockLLMConfig(
 client = any_llm_client.get_client(config, ...)
 ```
 
-#### Using dynamic LLM config from environment with [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/)
+#### Configuration with environment variables
+
+##### Credentials
+
+Instead of passing credentials directly, you can set corresponding environment variables:
+
+- OpenAI: `ANY_LLM_CLIENT_OPENAI_AUTH_TOKEN`,
+- YandexGPT: `ANY_LLM_CLIENT_YANDEXGPT_AUTH_HEADER`, `ANY_LLM_CLIENT_YANDEXGPT_FOLDER_ID`.
+
+##### LLM model config (with [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/))
 
 ```python
 import os
@@ -124,6 +133,8 @@ os.environ["LLM_MODEL"] = """{
 settings = Settings()
 client = any_llm_client.get_client(settings.llm_model, ...)
 ```
+
+Combining with environment variables from previous section, you can keep LLM model configuration and secrets separate.
 
 #### Using clients directly
 

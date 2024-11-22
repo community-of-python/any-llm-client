@@ -2,7 +2,7 @@ default: install lint test
 
 install:
     uv lock --upgrade
-    uv sync --frozen
+    uv sync --frozen --all-groups
 
 lint:
     uv run --group lint ruff check
