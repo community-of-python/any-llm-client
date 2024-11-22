@@ -154,15 +154,15 @@ class TestOpenAIMessageAlternation:
         ("messages", "expected_result"),
         [
             ([], []),
-            ([any_llm_client.Message(role="system", text="")], []),
-            ([any_llm_client.Message(role="system", text=" ")], []),
+            ([any_llm_client.SystemMessage("")], []),
+            ([any_llm_client.SystemMessage(" ")], []),
             ([any_llm_client.UserMessage("")], []),
             ([any_llm_client.AssistantMessage("")], []),
-            ([any_llm_client.Message(role="system", text=""), any_llm_client.UserMessage("")], []),
-            ([any_llm_client.Message(role="system", text=""), any_llm_client.AssistantMessage("")], []),
+            ([any_llm_client.SystemMessage(""), any_llm_client.UserMessage("")], []),
+            ([any_llm_client.SystemMessage(""), any_llm_client.AssistantMessage("")], []),
             (
                 [
-                    any_llm_client.Message(role="system", text=""),
+                    any_llm_client.SystemMessage(""),
                     any_llm_client.UserMessage(""),
                     any_llm_client.AssistantMessage(""),
                     any_llm_client.AssistantMessage(""),
@@ -171,10 +171,7 @@ class TestOpenAIMessageAlternation:
                 ],
                 [],
             ),
-            (
-                [any_llm_client.Message(role="system", text="Be nice")],
-                [ChatCompletionsMessage(role="user", content="Be nice")],
-            ),
+            ([any_llm_client.SystemMessage("Be nice")], [ChatCompletionsMessage(role="user", content="Be nice")]),
             (
                 [any_llm_client.UserMessage("Hi there"), any_llm_client.AssistantMessage("Hi! How can I help you?")],
                 [
@@ -184,7 +181,7 @@ class TestOpenAIMessageAlternation:
             ),
             (
                 [
-                    any_llm_client.Message(role="system", text=""),
+                    any_llm_client.SystemMessage(""),
                     any_llm_client.UserMessage("Hi there"),
                     any_llm_client.AssistantMessage("Hi! How can I help you?"),
                 ],
@@ -194,12 +191,12 @@ class TestOpenAIMessageAlternation:
                 ],
             ),
             (
-                [any_llm_client.Message(role="system", text="Be nice"), any_llm_client.UserMessage("Hi there")],
+                [any_llm_client.SystemMessage("Be nice"), any_llm_client.UserMessage("Hi there")],
                 [ChatCompletionsMessage(role="user", content="Be nice\n\nHi there")],
             ),
             (
                 [
-                    any_llm_client.Message(role="system", text="Be nice"),
+                    any_llm_client.SystemMessage("Be nice"),
                     any_llm_client.AssistantMessage("Hi!"),
                     any_llm_client.AssistantMessage("I'm your answer to everything."),
                     any_llm_client.AssistantMessage("How can I help you?"),
@@ -238,10 +235,7 @@ class TestOpenAIMessageAlternation:
             OpenAIConfigFactory.build(force_user_assistant_message_alternation=False)
         )
         assert client._prepare_messages(  # noqa: SLF001
-            [
-                any_llm_client.Message(role="system", text="Be nice"),
-                any_llm_client.UserMessage("Hi there"),
-            ]
+            [any_llm_client.SystemMessage("Be nice"), any_llm_client.UserMessage("Hi there")]
         ) == [
             ChatCompletionsMessage(role="system", content="Be nice"),
             ChatCompletionsMessage(role="user", content="Hi there"),
