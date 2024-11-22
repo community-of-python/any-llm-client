@@ -157,17 +157,17 @@ class TestOpenAIMessageAlternation:
             ([any_llm_client.Message(role="system", text="")], []),
             ([any_llm_client.Message(role="system", text=" ")], []),
             ([any_llm_client.UserMessage("")], []),
-            ([any_llm_client.Message(role="assistant", text="")], []),
+            ([any_llm_client.AssistantMessage("")], []),
             ([any_llm_client.Message(role="system", text=""), any_llm_client.UserMessage("")], []),
-            ([any_llm_client.Message(role="system", text=""), any_llm_client.Message(role="assistant", text="")], []),
+            ([any_llm_client.Message(role="system", text=""), any_llm_client.AssistantMessage("")], []),
             (
                 [
                     any_llm_client.Message(role="system", text=""),
                     any_llm_client.UserMessage(""),
-                    any_llm_client.Message(role="assistant", text=""),
-                    any_llm_client.Message(role="assistant", text=""),
+                    any_llm_client.AssistantMessage(""),
+                    any_llm_client.AssistantMessage(""),
                     any_llm_client.UserMessage(""),
-                    any_llm_client.Message(role="assistant", text=""),
+                    any_llm_client.AssistantMessage(""),
                 ],
                 [],
             ),
@@ -176,10 +176,7 @@ class TestOpenAIMessageAlternation:
                 [ChatCompletionsMessage(role="user", content="Be nice")],
             ),
             (
-                [
-                    any_llm_client.UserMessage("Hi there"),
-                    any_llm_client.Message(role="assistant", text="Hi! How can I help you?"),
-                ],
+                [any_llm_client.UserMessage("Hi there"), any_llm_client.AssistantMessage("Hi! How can I help you?")],
                 [
                     ChatCompletionsMessage(role="user", content="Hi there"),
                     ChatCompletionsMessage(role="assistant", content="Hi! How can I help you?"),
@@ -189,7 +186,7 @@ class TestOpenAIMessageAlternation:
                 [
                     any_llm_client.Message(role="system", text=""),
                     any_llm_client.UserMessage("Hi there"),
-                    any_llm_client.Message(role="assistant", text="Hi! How can I help you?"),
+                    any_llm_client.AssistantMessage("Hi! How can I help you?"),
                 ],
                 [
                     ChatCompletionsMessage(role="user", content="Hi there"),
@@ -197,25 +194,22 @@ class TestOpenAIMessageAlternation:
                 ],
             ),
             (
-                [
-                    any_llm_client.Message(role="system", text="Be nice"),
-                    any_llm_client.UserMessage("Hi there"),
-                ],
+                [any_llm_client.Message(role="system", text="Be nice"), any_llm_client.UserMessage("Hi there")],
                 [ChatCompletionsMessage(role="user", content="Be nice\n\nHi there")],
             ),
             (
                 [
                     any_llm_client.Message(role="system", text="Be nice"),
-                    any_llm_client.Message(role="assistant", text="Hi!"),
-                    any_llm_client.Message(role="assistant", text="I'm your answer to everything."),
-                    any_llm_client.Message(role="assistant", text="How can I help you?"),
+                    any_llm_client.AssistantMessage("Hi!"),
+                    any_llm_client.AssistantMessage("I'm your answer to everything."),
+                    any_llm_client.AssistantMessage("How can I help you?"),
                     any_llm_client.UserMessage("Hi there"),
                     any_llm_client.UserMessage(""),
                     any_llm_client.UserMessage("Why is the sky blue?"),
-                    any_llm_client.Message(role="assistant", text=" "),
-                    any_llm_client.Message(role="assistant", text="Well..."),
-                    any_llm_client.Message(role="assistant", text=""),
-                    any_llm_client.Message(role="assistant", text=" \n "),
+                    any_llm_client.AssistantMessage(" "),
+                    any_llm_client.AssistantMessage("Well..."),
+                    any_llm_client.AssistantMessage(""),
+                    any_llm_client.AssistantMessage(" \n "),
                     any_llm_client.UserMessage("Hmmm..."),
                 ],
                 [

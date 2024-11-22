@@ -21,9 +21,7 @@ class TestYandexGPTRequestLLMResponse:
             200,
             json=YandexGPTResponse(
                 result=YandexGPTResult(
-                    alternatives=[
-                        YandexGPTAlternative(message=any_llm_client.Message(role="assistant", text=expected_result))
-                    ]
+                    alternatives=[YandexGPTAlternative(message=any_llm_client.AssistantMessage(expected_result))]
                 )
             ).model_dump(mode="json"),
         )
@@ -55,9 +53,7 @@ class TestYandexGPTRequestLLMPartialResponses:
             "\n".join(
                 YandexGPTResponse(
                     result=YandexGPTResult(
-                        alternatives=[
-                            YandexGPTAlternative(message=any_llm_client.Message(role="assistant", text=one_text))
-                        ]
+                        alternatives=[YandexGPTAlternative(message=any_llm_client.AssistantMessage(one_text))]
                     )
                 ).model_dump_json()
                 for one_text in expected_result
