@@ -1,4 +1,4 @@
-import asyncio  # noqa: INP001
+import asyncio
 import os
 
 import any_llm_client
@@ -11,7 +11,7 @@ config = any_llm_client.YandexGPTConfig(
 
 async def main() -> None:
     async with any_llm_client.get_client(config) as client:
-        print(await client.request_llm_message("Кек, чо как вообще на нарах?"))  # noqa: T201
+        print(await client.request_llm_message("Кек, чо как вообще на нарах?"))
 
 
 asyncio.run(main())
