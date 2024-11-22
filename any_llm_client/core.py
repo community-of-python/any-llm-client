@@ -10,9 +10,38 @@ import typing_extensions
 MessageRole = typing.Literal["system", "user", "assistant"]
 
 
-class Message(pydantic.BaseModel):
+@pydantic.dataclasses.dataclass(kw_only=True)
+class Message:
     role: MessageRole
     text: str
+
+
+if typing.TYPE_CHECKING:
+
+    @pydantic.dataclasses.dataclass
+    class SystemMessage(Message):
+        role: typing.Literal["system"] = pydantic.Field("system", init=False)
+        text: str
+
+    @pydantic.dataclasses.dataclass
+    class UserMessage(Message):
+        role: typing.Literal["user"] = pydantic.Field("user", init=False)
+        text: str
+
+    @pydantic.dataclasses.dataclass
+    class AssistantMessage(Message):
+        role: typing.Literal["assistant"] = pydantic.Field("assistant", init=False)
+        text: str
+else:
+
+    def SystemMessage(text: str) -> Message:  # noqa: N802
+        return Message(role="system", text=text)
+
+    def UserMessage(text: str) -> Message:  # noqa: N802
+        return Message(role="user", text=text)
+
+    def AssistantMessage(text: str) -> Message:  # noqa: N802
+        return Message(role="assistant", text=text)
 
 
 @dataclasses.dataclass
