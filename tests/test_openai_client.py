@@ -1,4 +1,5 @@
 import typing
+from unittest import mock
 
 import faker
 import httpx
@@ -21,25 +22,28 @@ from tests.conftest import LLMFuncRequestFactory, consume_llm_partial_responses
 class OpenAIConfigFactory(ModelFactory[any_llm_client.OpenAIConfig]): ...
 
 
+# TODO: Add test utils for mocking LLMClient.http_client & add tests for HttpClient wrapper
+
+
+def mock_http_client(llm_client, mock) -> None:
+    llm_client.http_client = mock
+
+
 class TestOpenAIRequestLLMResponse:
     async def test_ok(self, faker: faker.Faker) -> None:
         expected_result: typing.Final = faker.pystr()
-        response: typing.Final = httpx.Response(
-            200,
-            json=ChatCompletionsNotStreamingResponse(
-                choices=[
-                    OneNotStreamingChoice(
-                        message=ChatCompletionsMessage(
-                            role=any_llm_client.MessageRole.assistant, content=expected_result
-                        )
-                    )
-                ]
-            ).model_dump(mode="json"),
-        )
+        response: typing.Final = ChatCompletionsNotStreamingResponse(
+            choices=[
+                OneNotStreamingChoice(
+                    message=ChatCompletionsMessage(role=any_llm_client.MessageRole.assistant, content=expected_result)
+                )
+            ]
+        ).model_dump_json()
 
-        result: typing.Final = await any_llm_client.get_client(
-            OpenAIConfigFactory.build(), transport=httpx.MockTransport(lambda _: response)
-        ).request_llm_message(**LLMFuncRequestFactory.build())
+        client: typing.Final = any_llm_client.get_client(OpenAIConfigFactory.build())
+        mock_http_client(client, mock.Mock(request=mock.AsyncMock(return_value=mock.Mock(content=response))))
+
+        result: typing.Final = await client.request_llm_message(**LLMFuncRequestFactory.build())
 
         assert result == expected_result
 
