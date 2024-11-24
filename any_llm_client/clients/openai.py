@@ -19,7 +19,7 @@ from any_llm_client.core import (
     OutOfTokensOrSymbolsError,
     UserMessage,
 )
-from any_llm_client.http import get_http_client_from_kwargs, make_http_request, make_streaming_http_request
+from any_llm_client.http import HttpClient, HttpStatusError
 from any_llm_client.retry import RequestRetryConfig
 
 
@@ -106,7 +106,7 @@ def _handle_status_error(*, status_code: int, content: bytes) -> typing.NoReturn
 @dataclasses.dataclass(slots=True, init=False)
 class OpenAIClient(LLMClient):
     config: OpenAIConfig
-    httpx_client: niquests.AsyncSession
+    http_client: HttpClient
     request_retry: RequestRetryConfig
 
     def __init__(
@@ -117,18 +117,15 @@ class OpenAIClient(LLMClient):
         **httpx_kwargs: typing.Any,  # noqa: ANN401
     ) -> None:
         self.config = config
-        self.httpx_client = niquests.AsyncSession()
         self.request_retry = request_retry or RequestRetryConfig()
-        self.httpx_client = get_http_client_from_kwargs(httpx_kwargs)
+        self.http_client = HttpClient.from_kwargs(httpx_kwargs)
 
-    def _build_request(self, payload: dict[str, typing.Any]) -> niquests.PreparedRequest:
-        return self.httpx_client.prepare_request(
-            niquests.Request(
-                method="POST",
-                url=str(self.config.url),
-                json=payload,
-                headers={"Authorization": f"Bearer {self.config.auth_token}"} if self.config.auth_token else None,
-            )
+    def _build_request(self, payload: dict[str, typing.Any]) -> niquests.Request:
+        return niquests.Request(
+            method="POST",
+            url=str(self.config.url),
+            json=payload,
+            headers={"Authorization": f"Bearer {self.config.auth_token}"} if self.config.auth_token else None,
         )
 
     def _prepare_messages(self, messages: str | list[Message]) -> list[ChatCompletionsMessage]:
@@ -150,24 +147,19 @@ class OpenAIClient(LLMClient):
             temperature=temperature,
         ).model_dump(mode="json")
         try:
-            response: typing.Final = await make_http_request(
-                httpx_client=self.httpx_client,
-                request_retry=self.request_retry,
-                build_request=lambda: self._build_request(payload),
+            response: typing.Final = await self.http_client.request(
+                self._build_request(payload), retry=self.request_retry
             )
-        except niquests.HTTPError as exception:
-            if exception.response and exception.response.status_code and exception.response.content:
+        except HttpStatusError as exception:
+            if exception.response:
                 _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
             else:
                 raise
-        try:
-            return (
-                ChatCompletionsNotStreamingResponse.model_validate_json(response.content)  # type: ignore[arg-type]
-                .choices[0]
-                .message.content
-            )
-        finally:
-            response.close()
+        return (
+            ChatCompletionsNotStreamingResponse.model_validate_json(response.content)  # type: ignore[arg-type]
+            .choices[0]
+            .message.content
+        )
 
     async def _iter_partial_responses(self, response: niquests.AsyncResponse) -> typing.AsyncIterable[str]:
         from httpx_sse._decoders import SSEDecoder
@@ -198,22 +190,15 @@ class OpenAIClient(LLMClient):
             temperature=temperature,
         ).model_dump(mode="json")
         try:
-            async with make_streaming_http_request(
-                httpx_client=self.httpx_client,
-                request_retry=self.request_retry,
-                build_request=lambda: self._build_request(payload),
+            async with self.http_client.stream(
+                request=self._build_request(payload), retry=self.request_retry
             ) as response:
                 yield self._iter_partial_responses(response)
-        except niquests.HTTPError as exception:
-            if exception.response and exception.response.status_code and exception.response.content:
-                content: typing.Final = exception.response.content
-                exception.response.close()
-                _handle_status_error(status_code=exception.response.status_code, content=content)
-            else:
-                raise
+        except HttpStatusError as exception:
+            _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
 
     async def __aenter__(self) -> typing_extensions.Self:
-        await self.httpx_client.__aenter__()  # type: ignore[no-untyped-call]
+        await self.http_client.__aenter__()
         return self
 
     async def __aexit__(
@@ -222,4 +207,4 @@ class OpenAIClient(LLMClient):
         exc_value: BaseException | None,
         traceback: types.TracebackType | None,
     ) -> None:
-        await self.httpx_client.__aexit__(exc_type, exc_value, traceback)  # type: ignore[no-untyped-call]
+        await self.http_client.__aexit__(exc_type, exc_value, traceback)

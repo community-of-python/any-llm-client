@@ -128,7 +128,7 @@ class YandexGPTClient(LLMClient):
         return YandexGPTResponse.model_validate_json(response.content).result.alternatives[0].message.text  # type: ignore[arg-type]
 
     async def _iter_completion_messages(self, response: niquests.AsyncResponse) -> typing.AsyncIterable[str]:
-        async for one_line in await response.iter_lines():
+        async for one_line in response.iter_lines():
             validated_response = YandexGPTResponse.model_validate_json(one_line)
             yield validated_response.result.alternatives[0].message.text
 
