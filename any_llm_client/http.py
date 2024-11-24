@@ -22,11 +22,13 @@ class HttpStatusError(Exception):
 
 @dataclasses.dataclass(frozen=True, kw_only=True, slots=True)
 class HttpClient:
-    timeout: urllib3.Timeout
     httpx_client: niquests.AsyncSession
+    timeout: urllib3.Timeout
+    request_retry: RequestRetryConfig
+    _request_retry_dict: dict[str, typing.Any]
 
     @classmethod
-    def from_kwargs(cls, kwargs: dict[str, typing.Any]) -> typing.Self:
+    def build(cls, request_retry: RequestRetryConfig, kwargs: dict[str, typing.Any]) -> typing.Self:
         modified_kwargs: typing.Final = kwargs.copy()
         timeout: typing.Final = modified_kwargs.pop("timeout", DEFAULT_HTTP_TIMEOUT)
         proxies: typing.Final = modified_kwargs.pop("proxies", None)
@@ -34,10 +36,15 @@ class HttpClient:
         session: typing.Final = niquests.AsyncSession(**modified_kwargs)
         if proxies:
             session.proxies = proxies
-        return cls(timeout=timeout, httpx_client=session)
+        return cls(
+            httpx_client=session,
+            timeout=timeout,
+            request_retry=request_retry,
+            _request_retry_dict=dataclasses.asdict(request_retry),
+        )
 
-    async def request(self, request: niquests.Request, *, retry: RequestRetryConfig) -> niquests.Response:
-        @stamina.retry(on=(niquests.HTTPError, HttpStatusError), **dataclasses.asdict(retry))
+    async def request(self, request: niquests.Request) -> niquests.Response:
+        @stamina.retry(on=(niquests.HTTPError, HttpStatusError), **self._request_retry_dict)
         async def make_request_with_retries() -> niquests.Response:
             response: typing.Final = await self.httpx_client.send(
                 self.httpx_client.prepare_request(request), timeout=self.timeout
@@ -54,9 +61,9 @@ class HttpClient:
 
     @contextlib.asynccontextmanager
     async def stream(
-        self, request: typing.Callable[[], niquests.PreparedRequest], *, retry: RequestRetryConfig
+        self, request: typing.Callable[[], niquests.PreparedRequest]
     ) -> typing.AsyncIterator[niquests.AsyncResponse]:
-        @stamina.retry(on=(niquests.HTTPError, HttpStatusError), **dataclasses.asdict(retry))
+        @stamina.retry(on=(niquests.HTTPError, HttpStatusError), **self._request_retry_dict)
         async def make_request_with_retries() -> niquests.AsyncResponse:
             response: typing.Final = await self.httpx_client.send(
                 self.httpx_client.prepare_request(request), stream=True, timeout=self.timeout

@@ -117,8 +117,7 @@ class OpenAIClient(LLMClient):
         **httpx_kwargs: typing.Any,  # noqa: ANN401
     ) -> None:
         self.config = config
-        self.request_retry = request_retry or RequestRetryConfig()
-        self.http_client = HttpClient.from_kwargs(httpx_kwargs)
+        self.http_client = HttpClient.build(request_retry=request_retry or RequestRetryConfig(), kwargs=httpx_kwargs)
 
     def _build_request(self, payload: dict[str, typing.Any]) -> niquests.Request:
         return niquests.Request(

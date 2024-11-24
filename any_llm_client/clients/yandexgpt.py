@@ -74,7 +74,6 @@ def _handle_status_error(*, status_code: int, content: bytes) -> typing.NoReturn
 class YandexGPTClient(LLMClient):
     config: YandexGPTConfig
     httpx_client: HttpClient
-    request_retry: RequestRetryConfig
 
     def __init__(
         self,
@@ -84,9 +83,7 @@ class YandexGPTClient(LLMClient):
         **httpx_kwargs: typing.Any,  # noqa: ANN401
     ) -> None:
         self.config = config
-        self.httpx_client = niquests.AsyncSession()
-        self.request_retry = request_retry or RequestRetryConfig()
-        self.httpx_client = HttpClient.from_kwargs(httpx_kwargs)
+        self.httpx_client = HttpClient.build(request_retry=request_retry or RequestRetryConfig(), kwargs=httpx_kwargs)
 
     def _build_request(self, payload: dict[str, typing.Any]) -> niquests.Request:
         return niquests.Request(
@@ -112,9 +109,7 @@ class YandexGPTClient(LLMClient):
         payload: typing.Final = self._prepare_payload(messages=messages, temperature=temperature, stream=False)
 
         try:
-            response: typing.Final = await self.httpx_client.request(
-                self._build_request(payload), retry=self.request_retry
-            )
+            response: typing.Final = await self.httpx_client.request(self._build_request(payload))
         except HttpStatusError as exception:
             _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
 
@@ -132,9 +127,7 @@ class YandexGPTClient(LLMClient):
         payload: typing.Final = self._prepare_payload(messages=messages, temperature=temperature, stream=True)
 
         try:
-            async with self.httpx_client.stream(
-                request=self._build_request(payload), retry=self.request_retry
-            ) as response:
+            async with self.httpx_client.stream(request=self._build_request(payload)) as response:
                 yield self._iter_completion_messages(response)
         except HttpStatusError as exception:
             _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
