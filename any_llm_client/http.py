@@ -43,7 +43,7 @@ class HttpClient:
             _request_retry_dict=dataclasses.asdict(request_retry),
         )
 
-    async def request(self, request: niquests.Request) -> niquests.Response:
+    async def request(self, request: niquests.Request) -> bytes:
         @stamina.retry(on=(niquests.HTTPError, HttpStatusError), **self._request_retry_dict)
         async def make_request_with_retries() -> niquests.Response:
             response: typing.Final = await self.httpx_client.send(
@@ -57,12 +57,13 @@ class HttpClient:
                 response.close()
             return response
 
-        return await make_request_with_retries()
+        response = await make_request_with_retries()
+        return response.content
 
     @contextlib.asynccontextmanager
     async def stream(
         self, request: typing.Callable[[], niquests.PreparedRequest]
-    ) -> typing.AsyncIterator[niquests.AsyncResponse]:
+    ) -> typing.AsyncIterator[typing.AsyncIterable[bytes]]:
         @stamina.retry(on=(niquests.HTTPError, HttpStatusError), **self._request_retry_dict)
         async def make_request_with_retries() -> niquests.AsyncResponse:
             response: typing.Final = await self.httpx_client.send(
@@ -80,7 +81,7 @@ class HttpClient:
         response: typing.Final = await make_request_with_retries()
         try:
             response.__aenter__()
-            yield response
+            yield response.iter_lines()
         finally:
             await response.raw.close()  # type: ignore[union-attr]
 

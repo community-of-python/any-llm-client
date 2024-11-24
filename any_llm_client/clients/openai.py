@@ -9,6 +9,7 @@ import annotated_types
 import niquests
 import pydantic
 import typing_extensions
+from httpx_sse._decoders import SSEDecoder
 
 from any_llm_client.core import (
     LLMClient,
@@ -150,17 +151,15 @@ class OpenAIClient(LLMClient):
         except HttpStatusError as exception:
             _handle_status_error(status_code=exception.status_code, content=exception.content)
         return (
-            ChatCompletionsNotStreamingResponse.model_validate_json(response.content)  # type: ignore[arg-type]
+            ChatCompletionsNotStreamingResponse.model_validate_json(response)  # type: ignore[arg-type]
             .choices[0]
             .message.content
         )
 
-    async def _iter_partial_responses(self, response: niquests.AsyncResponse) -> typing.AsyncIterable[str]:
-        from httpx_sse._decoders import SSEDecoder
-
+    async def _iter_partial_responses(self, response: typing.AsyncIterable[bytes]) -> typing.AsyncIterable[str]:
         decoder: typing.Final = SSEDecoder()
         text_chunks: typing.Final = []
-        async for line in response.iter_lines():  # type: ignore[attr-defined]
+        async for line in response:  # type: ignore[attr-defined]
             line_str = line.decode().rstrip("\n")
             event = decoder.decode(line_str)
             if not event:
