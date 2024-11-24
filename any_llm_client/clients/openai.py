@@ -150,10 +150,7 @@ class OpenAIClient(LLMClient):
                 self._build_request(payload), retry=self.request_retry
             )
         except HttpStatusError as exception:
-            if exception.response:
-                _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
-            else:
-                raise
+            _handle_status_error(status_code=exception.status_code, content=exception.content)
         return (
             ChatCompletionsNotStreamingResponse.model_validate_json(response.content)  # type: ignore[arg-type]
             .choices[0]
@@ -194,7 +191,7 @@ class OpenAIClient(LLMClient):
             ) as response:
                 yield self._iter_partial_responses(response)
         except HttpStatusError as exception:
-            _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
+            _handle_status_error(status_code=exception.status_code, content=exception.content)
 
     async def __aenter__(self) -> typing_extensions.Self:
         await self.http_client.__aenter__()
