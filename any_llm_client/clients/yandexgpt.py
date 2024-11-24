@@ -111,7 +111,7 @@ class YandexGPTClient(LLMClient):
         try:
             response: typing.Final = await self.httpx_client.request(self._build_request(payload))
         except HttpStatusError as exception:
-            _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
+            _handle_status_error(status_code=exception.status_code, content=exception.content)
 
         return YandexGPTResponse.model_validate_json(response.content).result.alternatives[0].message.text  # type: ignore[arg-type]
 
@@ -130,7 +130,7 @@ class YandexGPTClient(LLMClient):
             async with self.httpx_client.stream(request=self._build_request(payload)) as response:
                 yield self._iter_completion_messages(response)
         except HttpStatusError as exception:
-            _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
+            _handle_status_error(status_code=exception.status_code, content=exception.content)
 
     async def __aenter__(self) -> typing_extensions.Self:
         await self.httpx_client.__aenter__()
