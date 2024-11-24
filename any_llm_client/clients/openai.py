@@ -146,9 +146,7 @@ class OpenAIClient(LLMClient):
             temperature=temperature,
         ).model_dump(mode="json")
         try:
-            response: typing.Final = await self.http_client.request(
-                self._build_request(payload), retry=self.request_retry
-            )
+            response: typing.Final = await self.http_client.request(self._build_request(payload))
         except HttpStatusError as exception:
             _handle_status_error(status_code=exception.status_code, content=exception.content)
         return (
@@ -186,9 +184,7 @@ class OpenAIClient(LLMClient):
             temperature=temperature,
         ).model_dump(mode="json")
         try:
-            async with self.http_client.stream(
-                request=self._build_request(payload), retry=self.request_retry
-            ) as response:
+            async with self.http_client.stream(request=self._build_request(payload)) as response:
                 yield self._iter_partial_responses(response)
         except HttpStatusError as exception:
             _handle_status_error(status_code=exception.status_code, content=exception.content)
