@@ -1,4 +1,3 @@
-# pragma: no cover
 import typing
 
 import litestar

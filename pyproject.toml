@@ -90,3 +90,6 @@ addopts = "--cov=."
 skip_covered = true
 show_missing = true
 exclude_also = ["if typing.TYPE_CHECKING:"]
+
+[tool.coverage.run]
+omit = ["tests/testing_app.py"]
