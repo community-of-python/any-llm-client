@@ -28,7 +28,7 @@ class HttpClient:
     _request_retry_dict: dict[str, typing.Any]
 
     @classmethod
-    def build(cls, request_retry: RequestRetryConfig, kwargs: dict[str, typing.Any]) -> typing.Self:
+    def build(cls, request_retry: RequestRetryConfig, kwargs: dict[str, typing.Any]) -> typing_extensions.Self:
         modified_kwargs: typing.Final = kwargs.copy()
         timeout: typing.Final = modified_kwargs.pop("timeout", DEFAULT_HTTP_TIMEOUT)
         proxies: typing.Final = modified_kwargs.pop("proxies", None)
@@ -52,18 +52,19 @@ class HttpClient:
             try:
                 response.raise_for_status()
             except niquests.HTTPError as exception:
+                assert response.status_code  # noqa: S101
+                assert response.content  # noqa: S101
                 raise HttpStatusError(status_code=response.status_code, content=response.content) from exception
             finally:
                 response.close()
             return response
 
-        response = await make_request_with_retries()
+        response: typing.Final = await make_request_with_retries()
+        assert response.content  # noqa: S101
         return response.content
 
     @contextlib.asynccontextmanager
-    async def stream(
-        self, request: typing.Callable[[], niquests.PreparedRequest]
-    ) -> typing.AsyncIterator[typing.AsyncIterable[bytes]]:
+    async def stream(self, request: niquests.Request) -> typing.AsyncIterator[typing.AsyncIterable[bytes]]:
         @stamina.retry(on=(niquests.HTTPError, HttpStatusError), **self._request_retry_dict)
         async def make_request_with_retries() -> niquests.AsyncResponse:
             response: typing.Final = await self.httpx_client.send(
@@ -73,15 +74,18 @@ class HttpClient:
                 response.raise_for_status()
             except niquests.HTTPError as exception:
                 status_code: typing.Final = response.status_code
-                content: typing.Final = await response.content
-                await response.close()
-                raise HttpStatusError(status_code=status_code, content=content) from exception
-            return response  # type: ignore[return-value]
+                assert status_code  # noqa: S101
+                content: typing.Final = await response.content  # type: ignore[misc]
+                assert isinstance(status_code, bytes)  # noqa: S101
+                await response.close()  # type: ignore[misc]
+                raise HttpStatusError(status_code=status_code, content=content) from exception  # type: ignore[arg-type]
+            assert isinstance(response, niquests.AsyncResponse)  # noqa: S101
+            return response
 
         response: typing.Final = await make_request_with_retries()
         try:
             response.__aenter__()
-            yield response.iter_lines()
+            yield response.iter_lines()  # type: ignore[misc]
         finally:
             await response.raw.close()  # type: ignore[union-attr]
 
