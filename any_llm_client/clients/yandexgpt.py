@@ -83,7 +83,7 @@ class YandexGPTClient(LLMClient):
         **niquests_kwargs: typing.Any,  # noqa: ANN401
     ) -> None:
         self.config = config
-        self.http_client = HttpClient.build(
+        self.http_client = HttpClient(
             request_retry=request_retry or RequestRetryConfig(), niquests_kwargs=niquests_kwargs
         )
 

@@ -51,9 +51,7 @@ def test_llm_func_request_has_same_annotations_as_llm_client_methods() -> None:
 
 def test_proxies_are_set_on_http_client(faker: faker.Faker) -> None:
     proxies: typing.Final = faker.pydict()
-    http_client: typing.Final = HttpClient.build(
-        request_retry=RequestRetryConfig(), niquests_kwargs={"proxies": proxies}
-    )
+    http_client: typing.Final = HttpClient(request_retry=RequestRetryConfig(), niquests_kwargs={"proxies": proxies})
     assert http_client.client.proxies == proxies
 
 

@@ -20,61 +20,68 @@ class HttpStatusError(Exception):
     content: bytes
 
 
-@dataclasses.dataclass(frozen=True, kw_only=True, slots=True)
+@dataclasses.dataclass(slots=True, init=False)
 class HttpClient:
     client: niquests.AsyncSession
     timeout: urllib3.Timeout
-    request_retry_dict: dict[str, typing.Any]
+    _make_not_streaming_request_with_retries: typing.Callable[[niquests.Request], typing.Awaitable[niquests.Response]]
+    _make_streaming_request_with_retries: typing.Callable[[niquests.Request], typing.Awaitable[niquests.AsyncResponse]]
+    _retried_exceptions: typing.ClassVar = (niquests.HTTPError, HttpStatusError)
 
-    @classmethod
-    def build(cls, request_retry: RequestRetryConfig, niquests_kwargs: dict[str, typing.Any]) -> typing_extensions.Self:
+    def __init__(self, request_retry: RequestRetryConfig, niquests_kwargs: dict[str, typing.Any]) -> None:
         modified_kwargs: typing.Final = niquests_kwargs.copy()
-        timeout: typing.Final = modified_kwargs.pop("timeout", DEFAULT_HTTP_TIMEOUT)
+        self.timeout = modified_kwargs.pop("timeout", DEFAULT_HTTP_TIMEOUT)
         proxies: typing.Final = modified_kwargs.pop("proxies", None)
 
-        session: typing.Final = niquests.AsyncSession(**modified_kwargs)
+        self.client = niquests.AsyncSession(**modified_kwargs)
         if proxies:
-            session.proxies = proxies
-        return cls(client=session, timeout=timeout, request_retry_dict=dataclasses.asdict(request_retry))
+            self.client.proxies = proxies
+
+        request_retry_dict: typing.Final = dataclasses.asdict(request_retry)
+
+        self._make_not_streaming_request_with_retries = stamina.retry(
+            on=self._retried_exceptions, **request_retry_dict
+        )(self._make_not_streaming_request)
+        self._make_streaming_request_with_retries = stamina.retry(on=self._retried_exceptions, **request_retry_dict)(
+            self._make_streaming_request
+        )
+
+    async def _make_not_streaming_request(self, request: niquests.Request) -> niquests.Response:
+        response: typing.Final = await self.client.send(self.client.prepare_request(request), timeout=self.timeout)
+        try:
+            response.raise_for_status()
+        except niquests.HTTPError as exception:
+            assert response.status_code  # noqa: S101
+            assert response.content  # noqa: S101
+            raise HttpStatusError(status_code=response.status_code, content=response.content) from exception
+        finally:
+            response.close()
+        return response
 
     async def request(self, request: niquests.Request) -> bytes:
-        @stamina.retry(on=(niquests.HTTPError, HttpStatusError), **self.request_retry_dict)
-        async def make_request_with_retries() -> niquests.Response:
-            response: typing.Final = await self.client.send(self.client.prepare_request(request), timeout=self.timeout)
-            try:
-                response.raise_for_status()
-            except niquests.HTTPError as exception:
-                assert response.status_code  # noqa: S101
-                assert response.content  # noqa: S101
-                raise HttpStatusError(status_code=response.status_code, content=response.content) from exception
-            finally:
-                response.close()
-            return response
-
-        response: typing.Final = await make_request_with_retries()
+        response: typing.Final = await self._make_not_streaming_request_with_retries(request)
         assert response.content  # noqa: S101
         return response.content
 
+    async def _make_streaming_request(self, request: niquests.Request) -> niquests.AsyncResponse:
+        response: typing.Final = await self.client.send(
+            self.client.prepare_request(request), stream=True, timeout=self.timeout
+        )
+        try:
+            response.raise_for_status()
+        except niquests.HTTPError as exception:
+            status_code: typing.Final = response.status_code
+            content: typing.Final = await response.content  # type: ignore[misc]
+            await response.close()  # type: ignore[misc]
+            assert status_code  # noqa: S101
+            assert isinstance(content, bytes)  # noqa: S101
+            raise HttpStatusError(status_code=status_code, content=content) from exception
+        assert isinstance(response, niquests.AsyncResponse)  # noqa: S101
+        return response
+
     @contextlib.asynccontextmanager
     async def stream(self, request: niquests.Request) -> typing.AsyncIterator[typing.AsyncIterable[bytes]]:
-        @stamina.retry(on=(niquests.HTTPError, HttpStatusError), **self.request_retry_dict)
-        async def make_request_with_retries() -> niquests.AsyncResponse:
-            response: typing.Final = await self.client.send(
-                self.client.prepare_request(request), stream=True, timeout=self.timeout
-            )
-            try:
-                response.raise_for_status()
-            except niquests.HTTPError as exception:
-                status_code: typing.Final = response.status_code
-                content: typing.Final = await response.content  # type: ignore[misc]
-                await response.close()  # type: ignore[misc]
-                assert status_code  # noqa: S101
-                assert isinstance(content, bytes)  # noqa: S101
-                raise HttpStatusError(status_code=status_code, content=content) from exception
-            assert isinstance(response, niquests.AsyncResponse)  # noqa: S101
-            return response
-
-        response: typing.Final = await make_request_with_retries()
+        response: typing.Final = await self._make_streaming_request_with_retries(request)
         try:
             response.__aenter__()
             yield response.iter_lines()  # type: ignore[misc]
