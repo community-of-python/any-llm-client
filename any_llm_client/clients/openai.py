@@ -150,11 +150,7 @@ class OpenAIClient(LLMClient):
             response: typing.Final = await self.http_client.request(self._build_request(payload))
         except HttpStatusError as exception:
             _handle_status_error(status_code=exception.status_code, content=exception.content)
-        return (
-            ChatCompletionsNotStreamingResponse.model_validate_json(response)  # type: ignore[arg-type]
-            .choices[0]
-            .message.content
-        )
+        return ChatCompletionsNotStreamingResponse.model_validate_json(response).choices[0].message.content
 
     async def _iter_partial_responses(self, response: typing.AsyncIterable[bytes]) -> typing.AsyncIterable[str]:
         decoder: typing.Final = SSEDecoder()

@@ -35,9 +35,6 @@ async def consume_llm_partial_responses(
         return [one_item async for one_item in response_iterable]
 
 
-# TODO: Add test utils for mocking LLMClient.http_client & add tests for HttpClient wrapper
-
-
 def _make_async_stream_iterable(lines: str) -> typing.Any:  # noqa: ANN401
     async def iter_lines() -> typing.AsyncIterable[bytes]:
         for line in lines.splitlines():

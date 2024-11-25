@@ -109,11 +109,9 @@ class YandexGPTClient(LLMClient):
         payload: typing.Final = self._prepare_payload(messages=messages, temperature=temperature, stream=False)
 
         try:
-            response: typing.Final = await self.http_client.request(self._build_request(payload))
+            await self.http_client.request(self._build_request(payload))
         except HttpStatusError as exception:
             _handle_status_error(status_code=exception.status_code, content=exception.content)
-
-        return YandexGPTResponse.model_validate_json(response).result.alternatives[0].message.text  # type: ignore[arg-type]
 
     async def _iter_completion_messages(self, response: typing.AsyncIterable[bytes]) -> typing.AsyncIterable[str]:
         async for one_line in response:

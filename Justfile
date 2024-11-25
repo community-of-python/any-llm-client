@@ -10,14 +10,14 @@ lint:
     uv run --group lint ruff format
     uv run --group lint mypy .
 
-test *args:
-    uv run pytest {{ args }}
+_test-simple *args:
+    uv run pytest --ignore tests/http/integration.py {{ args }}
 
-test-http *args:
+test *args:
     #!/bin/bash
     uv run litestar --app tests.http.testing_app:app run &
     APP_PID=$!
-    uv run pytest tests/http/integration.py --no-cov {{ args }}
+    uv run pytest {{ args }}
     TEST_RESULT=$?
     kill $APP_PID
     wait $APP_PID 2> /dev/null
