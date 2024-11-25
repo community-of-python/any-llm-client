@@ -23,7 +23,6 @@ class TestYandexGPTRequestLLMResponse:
                 alternatives=[YandexGPTAlternative(message=any_llm_client.AssistantMessage(expected_result))]
             )
         ).model_dump_json()
-
         client: typing.Final = any_llm_client.get_client(YandexGPTConfigFactory.build())
         mock_http_client(client, mock.AsyncMock(return_value=response))
 
@@ -45,7 +44,6 @@ class TestYandexGPTRequestLLMResponse:
 class TestYandexGPTRequestLLMPartialResponses:
     async def test_ok(self, faker: faker.Faker) -> None:
         expected_result: typing.Final = faker.pylist(value_types=[str])
-        config: typing.Final = YandexGPTConfigFactory.build()
         func_request: typing.Final = LLMFuncRequestFactory.build()
         response: typing.Final = (
             "\n".join(
@@ -58,7 +56,7 @@ class TestYandexGPTRequestLLMPartialResponses:
             )
             + "\n"
         )
-        client: typing.Final = any_llm_client.get_client(config)
+        client: typing.Final = any_llm_client.get_client(YandexGPTConfigFactory.build())
         mock_http_client(client, mock.AsyncMock(return_value=response))
 
         result: typing.Final = await consume_llm_partial_responses(client.stream_llm_partial_messages(**func_request))
