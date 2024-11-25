@@ -74,11 +74,11 @@ class HttpClient:
                 response.raise_for_status()
             except niquests.HTTPError as exception:
                 status_code: typing.Final = response.status_code
-                assert status_code  # noqa: S101
                 content: typing.Final = await response.content  # type: ignore[misc]
-                assert isinstance(status_code, bytes)  # noqa: S101
                 await response.close()  # type: ignore[misc]
-                raise HttpStatusError(status_code=status_code, content=content) from exception  # type: ignore[arg-type]
+                assert status_code  # noqa: S101
+                assert isinstance(content, bytes)  # noqa: S101
+                raise HttpStatusError(status_code=status_code, content=content) from exception
             assert isinstance(response, niquests.AsyncResponse)  # noqa: S101
             return response
 
