@@ -178,6 +178,8 @@ async with any_llm_client.get_client(
     ...
 ```
 
+`timeout` and `proxies` parameters are special cased here: `niquests.AsyncSession` doesn't receive them by default.
+
 Default timeout is `urllib3.Timeout(total=None, connect=5.0)`.
 
 #### Retries
