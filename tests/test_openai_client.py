@@ -25,21 +25,21 @@ class OpenAIConfigFactory(ModelFactory[any_llm_client.OpenAIConfig]): ...
 # TODO: Add test utils for mocking LLMClient.http_client & add tests for HttpClient wrapper
 
 
-def mock_http_client(
-    llm_client: any_llm_client.LLMClient,
-    /,
-    *,
-    request: typing.Any = None,  # noqa: ANN401
-    stream: mock.AsyncMock | None = None,
-) -> None:
+def mock_http_client(llm_client: any_llm_client.LLMClient, request_mock: mock.AsyncMock) -> None:
     assert hasattr(llm_client, "http_client")
-    http_client_mock: typing.Final = mock.Mock(request=request)
-    if stream and isinstance(stream.return_value, str):
-        stream.return_value = make_async_iterable(stream.return_value)
-    http_client_mock.stream = mock.Mock(
-        return_value=mock.Mock(__aenter__=stream, __aexit__=mock.AsyncMock(return_value=None))
+    llm_client.http_client = mock.Mock(
+        request=request_mock,
+        stream=mock.Mock(
+            return_value=mock.Mock(
+                __aenter__=(
+                    mock.AsyncMock(return_value=make_async_iterable(request_mock.return_value))
+                    if isinstance(request_mock.return_value, str)
+                    else request_mock
+                ),
+                __aexit__=mock.AsyncMock(return_value=None),
+            )
+        ),
     )
-    llm_client.http_client = http_client_mock
 
 
 def make_async_iterable(lines: str) -> typing.Any:  # noqa: ANN401
@@ -61,7 +61,7 @@ class TestOpenAIRequestLLMResponse:
             ]
         ).model_dump_json()
         client: typing.Final = any_llm_client.get_client(OpenAIConfigFactory.build())
-        mock_http_client(client, request=mock.AsyncMock(return_value=response))
+        mock_http_client(client, mock.AsyncMock(return_value=response))
 
         result: typing.Final = await client.request_llm_message(**LLMFuncRequestFactory.build())
 
@@ -70,7 +70,7 @@ class TestOpenAIRequestLLMResponse:
     async def test_fails_without_alternatives(self) -> None:
         response: typing.Final = ChatCompletionsNotStreamingResponse.model_construct(choices=[]).model_dump(mode="json")
         client: typing.Final = any_llm_client.get_client(OpenAIConfigFactory.build())
-        mock_http_client(client, request=mock.AsyncMock(return_value=response))
+        mock_http_client(client, mock.AsyncMock(return_value=response))
 
         with pytest.raises(pydantic.ValidationError):
             await client.request_llm_message(**LLMFuncRequestFactory.build())
@@ -106,7 +106,7 @@ class TestOpenAIRequestLLMPartialResponses:
             + f"\n\ndata: [DONE]\n\ndata: {faker.pystr()}\n\n"
         )
         client: typing.Final = any_llm_client.get_client(OpenAIConfigFactory.build())
-        mock_http_client(client, stream=mock.AsyncMock(return_value=response))
+        mock_http_client(client, mock.AsyncMock(return_value=response))
 
         result: typing.Final = await consume_llm_partial_responses(
             client.stream_llm_partial_messages(**LLMFuncRequestFactory.build())
@@ -119,7 +119,7 @@ class TestOpenAIRequestLLMPartialResponses:
             f"data: {ChatCompletionsStreamingEvent.model_construct(choices=[]).model_dump_json()}\n\n"
         )
         client: typing.Final = any_llm_client.get_client(OpenAIConfigFactory.build())
-        mock_http_client(client, stream=mock.AsyncMock(return_value=response))
+        mock_http_client(client, mock.AsyncMock(return_value=response))
 
         with pytest.raises(pydantic.ValidationError):
             await consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
@@ -131,7 +131,7 @@ class TestOpenAILLMErrors:
     async def test_fails_with_unknown_error(self, stream: bool, status_code: int) -> None:
         client: typing.Final = any_llm_client.get_client(OpenAIConfigFactory.build())
         error: typing.Final = HttpStatusError(status_code=status_code, content=b"")
-        mock_http_client(client, request=mock.AsyncMock(side_effect=error), stream=mock.AsyncMock(side_effect=error))
+        mock_http_client(client, mock.AsyncMock(side_effect=error))
 
         coroutine: typing.Final = (
             consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
@@ -154,7 +154,7 @@ class TestOpenAILLMErrors:
     async def test_fails_with_out_of_tokens_error(self, stream: bool, content: bytes) -> None:
         client: typing.Final = any_llm_client.get_client(OpenAIConfigFactory.build())
         error: typing.Final = HttpStatusError(status_code=400, content=content)
-        mock_http_client(client, request=mock.AsyncMock(side_effect=error), stream=mock.AsyncMock(side_effect=error))
+        mock_http_client(client, mock.AsyncMock(side_effect=error))
 
         coroutine: typing.Final = (
             consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
