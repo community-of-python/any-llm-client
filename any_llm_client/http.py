@@ -24,8 +24,7 @@ class HttpStatusError(Exception):
 class HttpClient:
     client: niquests.AsyncSession
     timeout: urllib3.Timeout
-    request_retry: RequestRetryConfig
-    _request_retry_dict: dict[str, typing.Any]
+    request_retry_dict: dict[str, typing.Any]
 
     @classmethod
     def build(cls, request_retry: RequestRetryConfig, niquests_kwargs: dict[str, typing.Any]) -> typing_extensions.Self:
@@ -36,15 +35,10 @@ class HttpClient:
         session: typing.Final = niquests.AsyncSession(**modified_kwargs)
         if proxies:
             session.proxies = proxies
-        return cls(
-            client=session,
-            timeout=timeout,
-            request_retry=request_retry,
-            _request_retry_dict=dataclasses.asdict(request_retry),
-        )
+        return cls(client=session, timeout=timeout, request_retry_dict=dataclasses.asdict(request_retry))
 
     async def request(self, request: niquests.Request) -> bytes:
-        @stamina.retry(on=(niquests.HTTPError, HttpStatusError), **self._request_retry_dict)
+        @stamina.retry(on=(niquests.HTTPError, HttpStatusError), **self.request_retry_dict)
         async def make_request_with_retries() -> niquests.Response:
             response: typing.Final = await self.client.send(self.client.prepare_request(request), timeout=self.timeout)
             try:
@@ -63,7 +57,7 @@ class HttpClient:
 
     @contextlib.asynccontextmanager
     async def stream(self, request: niquests.Request) -> typing.AsyncIterator[typing.AsyncIterable[bytes]]:
-        @stamina.retry(on=(niquests.HTTPError, HttpStatusError), **self._request_retry_dict)
+        @stamina.retry(on=(niquests.HTTPError, HttpStatusError), **self.request_retry_dict)
         async def make_request_with_retries() -> niquests.AsyncResponse:
             response: typing.Final = await self.client.send(
                 self.client.prepare_request(request), stream=True, timeout=self.timeout
