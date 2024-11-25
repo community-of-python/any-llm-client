@@ -38,7 +38,7 @@ async def consume_llm_partial_responses(
 # TODO: Add test utils for mocking LLMClient.http_client & add tests for HttpClient wrapper
 
 
-def make_async_stream_iterable(lines: str) -> typing.Any:  # noqa: ANN401
+def _make_async_stream_iterable(lines: str) -> typing.Any:  # noqa: ANN401
     async def iter_lines() -> typing.AsyncIterable[bytes]:
         for line in lines.splitlines():
             yield line.encode()
@@ -53,7 +53,7 @@ def mock_http_client(llm_client: any_llm_client.LLMClient, request_mock: mock.As
         stream=mock.Mock(
             return_value=mock.Mock(
                 __aenter__=(
-                    mock.AsyncMock(return_value=make_async_stream_iterable(request_mock.return_value))
+                    mock.AsyncMock(return_value=_make_async_stream_iterable(request_mock.return_value))
                     if isinstance(request_mock.return_value, str)
                     else request_mock
                 ),
