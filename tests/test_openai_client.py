@@ -30,10 +30,12 @@ def mock_http_client(
     /,
     *,
     request: typing.Any = None,  # noqa: ANN401
-    stream: typing.Any = None,  # noqa: ANN401
+    stream: mock.AsyncMock | None = None,
 ) -> None:
     assert hasattr(llm_client, "http_client")
     http_client_mock: typing.Final = mock.Mock(request=request)
+    if stream and isinstance(stream.return_value, str):
+        stream.return_value = make_async_iterable(stream.return_value)
     http_client_mock.stream = mock.Mock(
         return_value=mock.Mock(__aenter__=stream, __aexit__=mock.AsyncMock(return_value=None))
     )
@@ -104,7 +106,7 @@ class TestOpenAIRequestLLMPartialResponses:
             + f"\n\ndata: [DONE]\n\ndata: {faker.pystr()}\n\n"
         )
         client: typing.Final = any_llm_client.get_client(OpenAIConfigFactory.build())
-        mock_http_client(client, stream=mock.AsyncMock(return_value=make_async_iterable(response)))
+        mock_http_client(client, stream=mock.AsyncMock(return_value=response))
 
         result: typing.Final = await consume_llm_partial_responses(
             client.stream_llm_partial_messages(**LLMFuncRequestFactory.build())
@@ -117,7 +119,7 @@ class TestOpenAIRequestLLMPartialResponses:
             f"data: {ChatCompletionsStreamingEvent.model_construct(choices=[]).model_dump_json()}\n\n"
         )
         client: typing.Final = any_llm_client.get_client(OpenAIConfigFactory.build())
-        mock_http_client(client, stream=mock.AsyncMock(return_value=make_async_iterable(response)))
+        mock_http_client(client, stream=mock.AsyncMock(return_value=response))
 
         with pytest.raises(pydantic.ValidationError):
             await consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
