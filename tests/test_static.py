@@ -8,10 +8,10 @@ import stamina
 from polyfactory.factories.pydantic_factory import ModelFactory
 
 import any_llm_client
-from any_llm_client.http import HttpClient
-from any_llm_client.retry import RequestRetryConfig
 from any_llm_client.clients.openai import ChatCompletionsRequest
 from any_llm_client.clients.yandexgpt import YandexGPTRequest
+from any_llm_client.http import HttpClient
+from any_llm_client.retry import RequestRetryConfig
 from tests.conftest import LLMFuncRequest
 
 

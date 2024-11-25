@@ -9,7 +9,6 @@ import annotated_types
 import niquests
 import pydantic
 import typing_extensions
-from httpx_sse._decoders import SSEDecoder
 
 from any_llm_client.core import (
     LLMClient,
@@ -20,7 +19,7 @@ from any_llm_client.core import (
     OutOfTokensOrSymbolsError,
     UserMessage,
 )
-from any_llm_client.http import HttpClient, HttpStatusError
+from any_llm_client.http import HttpClient, HttpStatusError, parse_sse_events
 from any_llm_client.retry import RequestRetryConfig
 
 
@@ -157,16 +156,11 @@ class OpenAIClient(LLMClient):
         return ChatCompletionsNotStreamingResponse.model_validate_json(response).choices[0].message.content
 
     async def _iter_partial_responses(self, response: typing.AsyncIterable[bytes]) -> typing.AsyncIterable[str]:
-        decoder: typing.Final = SSEDecoder()
         text_chunks: typing.Final = []
-        async for line in response:
-            line_str = line.decode().rstrip("\n")
-            event = decoder.decode(line_str)
-            if not event:
-                continue
-            if event.data == "[DONE]":
+        async for one_event in parse_sse_events(response):
+            if one_event.data == "[DONE]":
                 break
-            validated_response = ChatCompletionsStreamingEvent.model_validate_json(event.data)
+            validated_response = ChatCompletionsStreamingEvent.model_validate_json(one_event.data)
             if not (one_chunk := validated_response.choices[0].delta.content):
                 continue
             text_chunks.append(one_chunk)

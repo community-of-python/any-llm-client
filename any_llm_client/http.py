@@ -3,10 +3,12 @@ import dataclasses
 import types
 import typing
 
+import httpx_sse
 import niquests
 import stamina
 import typing_extensions
 import urllib3
+from httpx_sse._decoders import SSEDecoder
 
 from any_llm_client.retry import RequestRetryConfig
 
@@ -100,3 +102,10 @@ class HttpClient:
         traceback: types.TracebackType | None,
     ) -> None:
         await self.httpx_client.__aexit__(exc_type, exc_value, traceback)  # type: ignore[no-untyped-call]
+
+
+async def parse_sse_events(response: typing.AsyncIterable[bytes]) -> typing.AsyncIterator[httpx_sse.ServerSentEvent]:
+    sse_decoder: typing.Final = SSEDecoder()
+    async for one_line in response:
+        if event := sse_decoder.decode(one_line.decode().rstrip("\n")):
+            yield event
