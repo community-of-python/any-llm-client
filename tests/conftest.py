@@ -46,7 +46,7 @@ def make_async_stream_iterable(lines: str) -> typing.Any:  # noqa: ANN401
     return iter_lines()
 
 
-def mock_http_client(llm_client: any_llm_client.LLMClient, request_mock: mock.AsyncMock) -> None:
+def mock_http_client(llm_client: any_llm_client.LLMClient, request_mock: mock.AsyncMock) -> any_llm_client.LLMClient:
     assert hasattr(llm_client, "http_client")
     llm_client.http_client = mock.Mock(
         request=request_mock,
@@ -61,3 +61,4 @@ def mock_http_client(llm_client: any_llm_client.LLMClient, request_mock: mock.As
             )
         ),
     )
+    return llm_client

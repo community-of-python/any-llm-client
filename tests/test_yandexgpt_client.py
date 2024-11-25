@@ -23,8 +23,9 @@ class TestYandexGPTRequestLLMResponse:
                 alternatives=[YandexGPTAlternative(message=any_llm_client.AssistantMessage(expected_result))]
             )
         ).model_dump_json()
-        client: typing.Final = any_llm_client.get_client(YandexGPTConfigFactory.build())
-        mock_http_client(client, mock.AsyncMock(return_value=response))
+        client: typing.Final = mock_http_client(
+            any_llm_client.get_client(YandexGPTConfigFactory.build()), mock.AsyncMock(return_value=response)
+        )
 
         result: typing.Final = await client.request_llm_message(**LLMFuncRequestFactory.build())
 
@@ -34,8 +35,9 @@ class TestYandexGPTRequestLLMResponse:
         response: typing.Final = YandexGPTResponse(
             result=YandexGPTResult.model_construct(alternatives=[])
         ).model_dump_json()
-        client: typing.Final = any_llm_client.get_client(YandexGPTConfigFactory.build())
-        mock_http_client(client, mock.AsyncMock(return_value=response))
+        client: typing.Final = mock_http_client(
+            any_llm_client.get_client(YandexGPTConfigFactory.build()), mock.AsyncMock(return_value=response)
+        )
 
         with pytest.raises(pydantic.ValidationError):
             await client.request_llm_message(**LLMFuncRequestFactory.build())
@@ -56,8 +58,9 @@ class TestYandexGPTRequestLLMPartialResponses:
             )
             + "\n"
         )
-        client: typing.Final = any_llm_client.get_client(YandexGPTConfigFactory.build())
-        mock_http_client(client, mock.AsyncMock(return_value=response))
+        client: typing.Final = mock_http_client(
+            any_llm_client.get_client(YandexGPTConfigFactory.build()), mock.AsyncMock(return_value=response)
+        )
 
         result: typing.Final = await consume_llm_partial_responses(client.stream_llm_partial_messages(**func_request))
 
@@ -67,8 +70,9 @@ class TestYandexGPTRequestLLMPartialResponses:
         response: typing.Final = (
             YandexGPTResponse(result=YandexGPTResult.model_construct(alternatives=[])).model_dump_json() + "\n"
         )
-        client: typing.Final = any_llm_client.get_client(YandexGPTConfigFactory.build())
-        mock_http_client(client, mock.AsyncMock(return_value=response))
+        client: typing.Final = mock_http_client(
+            any_llm_client.get_client(YandexGPTConfigFactory.build()), mock.AsyncMock(return_value=response)
+        )
 
         with pytest.raises(pydantic.ValidationError):
             await consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
@@ -77,9 +81,11 @@ class TestYandexGPTRequestLLMPartialResponses:
 class TestYandexGPTLLMErrors:
     @pytest.mark.parametrize("stream", [True, False])
     @pytest.mark.parametrize("status_code", [400, 500])
-    async def test_fails_with_unknown_error(self, stream: bool, status_code: int) -> None:
-        client: typing.Final = any_llm_client.get_client(YandexGPTConfigFactory.build())
-        mock_http_client(client, mock.AsyncMock(side_effect=HttpStatusError(status_code=status_code, content=b"")))
+    async def test_fails_with_unknown_error(self, faker: faker.Faker, stream: bool, status_code: int) -> None:
+        client: typing.Final = mock_http_client(
+            any_llm_client.get_client(YandexGPTConfigFactory.build()),
+            mock.AsyncMock(side_effect=HttpStatusError(status_code=status_code, content=faker.pystr().encode())),
+        )
 
         coroutine: typing.Final = (
             consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
@@ -100,8 +106,10 @@ class TestYandexGPTLLMErrors:
         ],
     )
     async def test_fails_with_out_of_tokens_error(self, stream: bool, content: bytes) -> None:
-        client: typing.Final = any_llm_client.get_client(YandexGPTConfigFactory.build())
-        mock_http_client(client, mock.AsyncMock(side_effect=HttpStatusError(status_code=400, content=content)))
+        client: typing.Final = mock_http_client(
+            any_llm_client.get_client(YandexGPTConfigFactory.build()),
+            mock.AsyncMock(side_effect=HttpStatusError(status_code=400, content=content)),
+        )
 
         coroutine: typing.Final = (
             consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
