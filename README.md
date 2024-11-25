@@ -162,23 +162,23 @@ async with any_llm_client.OpenAIClient(config, ...) as client:
 #### Timeouts, proxy & other HTTP settings
 
 
-Pass custom [HTTPX](https://www.python-httpx.org) kwargs to `any_llm_client.get_client()`:
+Pass custom [niquests](https://niquests.readthedocs.io) kwargs to `any_llm_client.get_client()`:
 
 ```python
-import httpx
+import urllib3
 
 import any_llm_client
 
 
 async with any_llm_client.get_client(
     ...,
-    mounts={"https://api.openai.com": httpx.AsyncHTTPTransport(proxy="http://localhost:8030")},
-    timeout=httpx.Timeout(None, connect=5.0),
+    proxies={"https://api.openai.com": "http://localhost:8030"},
+    timeout=urllib3.Timeout(total=10.0, connect=5.0),
 ) as client:
     ...
 ```
 
-Default timeout is `httpx.Timeout(None, connect=5.0)` (5 seconds on connect, unlimited on read, write or pool).
+Default timeout is `urllib3.Timeout(total=None, connect=5.0)`.
 
 #### Retries
 

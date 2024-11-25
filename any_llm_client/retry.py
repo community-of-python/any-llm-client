@@ -4,7 +4,7 @@ import datetime
 
 @dataclasses.dataclass(frozen=True, kw_only=True, slots=True)
 class RequestRetryConfig:
-    """Request retry configuration that is passed to `stamina.retry`. Applies to httpx.HTTPError.
+    """Request retry configuration that is passed to `stamina.retry`. Applies to niquests.HTTPError.
 
     Uses defaults from `stamina.retry` except for attempts: by default 3 instead of 10.
     See more at https://stamina.hynek.me/en/stable/api.html#stamina.retry

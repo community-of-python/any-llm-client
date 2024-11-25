@@ -24,7 +24,7 @@ class HttpStatusError(Exception):
 
 @dataclasses.dataclass(frozen=True, kw_only=True, slots=True)
 class HttpClient:
-    httpx_client: niquests.AsyncSession
+    client: niquests.AsyncSession
     timeout: urllib3.Timeout
     request_retry: RequestRetryConfig
     _request_retry_dict: dict[str, typing.Any]
@@ -39,7 +39,7 @@ class HttpClient:
         if proxies:
             session.proxies = proxies
         return cls(
-            httpx_client=session,
+            client=session,
             timeout=timeout,
             request_retry=request_retry,
             _request_retry_dict=dataclasses.asdict(request_retry),
@@ -48,9 +48,7 @@ class HttpClient:
     async def request(self, request: niquests.Request) -> bytes:
         @stamina.retry(on=(niquests.HTTPError, HttpStatusError), **self._request_retry_dict)
         async def make_request_with_retries() -> niquests.Response:
-            response: typing.Final = await self.httpx_client.send(
-                self.httpx_client.prepare_request(request), timeout=self.timeout
-            )
+            response: typing.Final = await self.client.send(self.client.prepare_request(request), timeout=self.timeout)
             try:
                 response.raise_for_status()
             except niquests.HTTPError as exception:
@@ -69,8 +67,8 @@ class HttpClient:
     async def stream(self, request: niquests.Request) -> typing.AsyncIterator[typing.AsyncIterable[bytes]]:
         @stamina.retry(on=(niquests.HTTPError, HttpStatusError), **self._request_retry_dict)
         async def make_request_with_retries() -> niquests.AsyncResponse:
-            response: typing.Final = await self.httpx_client.send(
-                self.httpx_client.prepare_request(request), stream=True, timeout=self.timeout
+            response: typing.Final = await self.client.send(
+                self.client.prepare_request(request), stream=True, timeout=self.timeout
             )
             try:
                 response.raise_for_status()
@@ -92,7 +90,7 @@ class HttpClient:
             await response.raw.close()  # type: ignore[union-attr]
 
     async def __aenter__(self) -> typing_extensions.Self:
-        await self.httpx_client.__aenter__()  # type: ignore[no-untyped-call]
+        await self.client.__aenter__()  # type: ignore[no-untyped-call]
         return self
 
     async def __aexit__(
@@ -101,7 +99,7 @@ class HttpClient:
         exc_value: BaseException | None,
         traceback: types.TracebackType | None,
     ) -> None:
-        await self.httpx_client.__aexit__(exc_type, exc_value, traceback)  # type: ignore[no-untyped-call]
+        await self.client.__aexit__(exc_type, exc_value, traceback)  # type: ignore[no-untyped-call]
 
 
 async def parse_sse_events(response: typing.AsyncIterable[bytes]) -> typing.AsyncIterator[httpx_sse.ServerSentEvent]:

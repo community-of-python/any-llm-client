@@ -17,7 +17,6 @@ authors = [{ name = "Lev Vereshchagin", email = "mail@vrslev.com" }]
 requires-python = ">=3.10"
 dependencies = [
     "httpx-sse>=0.4.0",
-    "httpx>=0.27.2",
     "niquests>=3.11.1",
     "pydantic>=2.9.2",
     "stamina>=24.3.0",
@@ -32,7 +31,7 @@ dev = [
     "pydantic-settings",
     "pytest-cov",
     "pytest",
-    "litestar[standard]>=2.13.0",
+    "litestar[standard]",
 ]
 lint = [{ include-group = "dev" }, "auto-typing-final", "mypy", "ruff"]
 
