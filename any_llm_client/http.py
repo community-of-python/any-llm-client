@@ -51,17 +51,14 @@ class HttpClient:
         try:
             response.raise_for_status()
         except niquests.HTTPError as exception:
-            assert response.status_code  # noqa: S101
-            assert response.content  # noqa: S101
-            raise HttpStatusError(status_code=response.status_code, content=response.content) from exception
+            raise HttpStatusError(status_code=response.status_code, content=response.content) from exception  # type: ignore[arg-type]
         finally:
             response.close()
         return response
 
     async def request(self, request: niquests.Request) -> bytes:
         response: typing.Final = await self._make_not_streaming_request_with_retries(request)
-        assert response.content  # noqa: S101
-        return response.content
+        return response.content  # type: ignore[return-value]
 
     async def _make_streaming_request(self, request: niquests.Request) -> niquests.AsyncResponse:
         response: typing.Final = await self.client.send(
@@ -73,11 +70,8 @@ class HttpClient:
             status_code: typing.Final = response.status_code
             content: typing.Final = await response.content  # type: ignore[misc]
             await response.close()  # type: ignore[misc]
-            assert status_code  # noqa: S101
-            assert isinstance(content, bytes)  # noqa: S101
-            raise HttpStatusError(status_code=status_code, content=content) from exception
-        assert isinstance(response, niquests.AsyncResponse)  # noqa: S101
-        return response
+            raise HttpStatusError(status_code=status_code, content=content) from exception  # type: ignore[arg-type]
+        return response  # type: ignore[return-value]
 
     @contextlib.asynccontextmanager
     async def stream(self, request: niquests.Request) -> typing.AsyncIterator[typing.AsyncIterable[bytes]]:
