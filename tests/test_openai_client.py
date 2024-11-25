@@ -16,38 +16,10 @@ from any_llm_client.clients.openai import (
     OneStreamingChoiceDelta,
 )
 from any_llm_client.http import HttpStatusError
-from tests.conftest import LLMFuncRequestFactory, consume_llm_partial_responses
+from tests.conftest import LLMFuncRequestFactory, consume_llm_partial_responses, mock_http_client
 
 
 class OpenAIConfigFactory(ModelFactory[any_llm_client.OpenAIConfig]): ...
-
-
-# TODO: Add test utils for mocking LLMClient.http_client & add tests for HttpClient wrapper
-
-
-def mock_http_client(llm_client: any_llm_client.LLMClient, request_mock: mock.AsyncMock) -> None:
-    assert hasattr(llm_client, "http_client")
-    llm_client.http_client = mock.Mock(
-        request=request_mock,
-        stream=mock.Mock(
-            return_value=mock.Mock(
-                __aenter__=(
-                    mock.AsyncMock(return_value=make_async_iterable(request_mock.return_value))
-                    if isinstance(request_mock.return_value, str)
-                    else request_mock
-                ),
-                __aexit__=mock.AsyncMock(return_value=None),
-            )
-        ),
-    )
-
-
-def make_async_iterable(lines: str) -> typing.Any:  # noqa: ANN401
-    async def iter_lines() -> typing.AsyncIterable[bytes]:
-        for line in lines.split("\n"):
-            yield line.encode()
-
-    return iter_lines()
 
 
 class TestOpenAIRequestLLMResponse:

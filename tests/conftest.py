@@ -1,5 +1,6 @@
 import contextlib
 import typing
+from unittest import mock
 
 import pytest
 import stamina
@@ -32,3 +33,31 @@ async def consume_llm_partial_responses(
 ) -> list[str]:
     async with request_llm_partial_responses_context_manager as response_iterable:
         return [one_item async for one_item in response_iterable]
+
+
+# TODO: Add test utils for mocking LLMClient.http_client & add tests for HttpClient wrapper
+
+
+def make_async_stream_iterable(lines: str) -> typing.Any:  # noqa: ANN401
+    async def iter_lines() -> typing.AsyncIterable[bytes]:
+        for line in lines.split("\n"):
+            yield line.encode()
+
+    return iter_lines()
+
+
+def mock_http_client(llm_client: any_llm_client.LLMClient, request_mock: mock.AsyncMock) -> None:
+    assert hasattr(llm_client, "http_client")
+    llm_client.http_client = mock.Mock(
+        request=request_mock,
+        stream=mock.Mock(
+            return_value=mock.Mock(
+                __aenter__=(
+                    mock.AsyncMock(return_value=make_async_stream_iterable(request_mock.return_value))
+                    if isinstance(request_mock.return_value, str)
+                    else request_mock
+                ),
+                __aexit__=mock.AsyncMock(return_value=None),
+            )
+        ),
+    )
