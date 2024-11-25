@@ -32,6 +32,7 @@ dev = [
     "pydantic-settings",
     "pytest-cov",
     "pytest",
+    "litestar[standard]>=2.13.0",
 ]
 lint = [{ include-group = "dev" }, "auto-typing-final", "mypy", "ruff"]
 

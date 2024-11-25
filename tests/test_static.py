@@ -5,6 +5,8 @@ import faker
 import stamina
 
 import any_llm_client
+from any_llm_client.http import HttpClient
+from any_llm_client.retry import RequestRetryConfig
 from tests.conftest import LLMFuncRequest
 
 
@@ -40,3 +42,9 @@ def test_llm_func_request_has_same_annotations_as_llm_client_methods() -> None:
                 annotations.pop(one_ignored_prop)
 
     assert all(annotations == all_annotations[0] for annotations in all_annotations)
+
+
+def test_proxies_are_set_on_http_client(faker: faker.Faker) -> None:
+    proxies: typing.Final = faker.pydict()
+    http_client: typing.Final = HttpClient.build(request_retry=RequestRetryConfig(), kwargs={"proxies": proxies})
+    assert http_client.httpx_client.proxies == proxies
