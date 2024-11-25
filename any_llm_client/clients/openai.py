@@ -155,7 +155,7 @@ class OpenAIClient(LLMClient):
     async def _iter_partial_responses(self, response: typing.AsyncIterable[bytes]) -> typing.AsyncIterable[str]:
         decoder: typing.Final = SSEDecoder()
         text_chunks: typing.Final = []
-        async for line in response:  # type: ignore[attr-defined]
+        async for line in response:
             line_str = line.decode().rstrip("\n")
             event = decoder.decode(line_str)
             if not event:
