@@ -1,4 +1,4 @@
-import asyncio  # noqa: INP001
+import asyncio
 import os
 
 import any_llm_client
@@ -15,8 +15,8 @@ async def main() -> None:
         client.stream_llm_partial_messages("Кек, чо как вообще на нарах?") as partial_messages,
     ):
         async for message in partial_messages:
-            print("\033[2J")  # clear screen  # noqa: T201
-            print(message)  # noqa: T201
+            print("\033[2J")  # clear screen
+            print(message)
 
 
 asyncio.run(main())

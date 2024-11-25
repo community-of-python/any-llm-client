@@ -99,7 +99,9 @@ config = any_llm_client.MockLLMConfig(
     response_message=...,
     stream_messages=["Hi!"],
 )
-client = any_llm_client.get_client(config, ...)
+
+async with any_llm_client.get_client(config, ...) as client:
+    ...
 ```
 
 #### Configuration with environment variables
@@ -131,7 +133,9 @@ os.environ["LLM_MODEL"] = """{
     "model_name": "qwen2.5-coder:1.5b"
 }"""
 settings = Settings()
-client = any_llm_client.get_client(settings.llm_model, ...)
+
+async with any_llm_client.get_client(settings.llm_model, ...) as client:
+    ...
 ```
 
 Combining with environment variables from previous section, you can keep LLM model configuration and secrets separate.
@@ -146,7 +150,9 @@ config = any_llm_client.OpenAIConfig(
     auth_token=os.environ["OPENAI_API_KEY"],
     model_name="gpt-4o-mini",
 )
-client = any_llm_client.OpenAIClient(config, ...)
+
+async with any_llm_client.OpenAIClient(config, ...) as client:
+    ...
 ```
 
 #### Errors
@@ -179,5 +185,12 @@ Default timeout is `httpx.Timeout(None, connect=5.0)` (5 seconds on connect, unl
 By default, requests are retried 3 times on HTTP status errors. You can change the retry behaviour by supplying `request_retry` parameter:
 
 ```python
-client = any_llm_client.get_client(..., request_retry=any_llm_client.RequestRetryConfig(attempts=5, ...))
+async with any_llm_client.get_client(..., request_retry=any_llm_client.RequestRetryConfig(attempts=5, ...)) as client:
+    ...
+```
+
+#### Passing extra data to LLM
+
+```python
+await client.request_llm_message("Кек, чо как вообще на нарах?", extra={"best_of": 3})
 ```

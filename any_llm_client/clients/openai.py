@@ -45,6 +45,7 @@ class ChatCompletionsMessage(pydantic.BaseModel):
 
 
 class ChatCompletionsRequest(pydantic.BaseModel):
+    model_config = pydantic.ConfigDict(extra="allow")
     stream: bool
     model: str
     messages: list[ChatCompletionsMessage]
@@ -139,12 +140,15 @@ class OpenAIClient(LLMClient):
             else list(initial_messages)
         )
 
-    async def request_llm_message(self, messages: str | list[Message], temperature: float = 0.2) -> str:
+    async def request_llm_message(
+        self, messages: str | list[Message], *, temperature: float = 0.2, extra: dict[str, typing.Any] | None = None
+    ) -> str:
         payload: typing.Final = ChatCompletionsRequest(
             stream=False,
             model=self.config.model_name,
             messages=self._prepare_messages(messages),
             temperature=temperature,
+            **extra or {},
         ).model_dump(mode="json")
         try:
             response: typing.Final = await self.http_client.request(self._build_request(payload))
@@ -170,13 +174,14 @@ class OpenAIClient(LLMClient):
 
     @contextlib.asynccontextmanager
     async def stream_llm_partial_messages(
-        self, messages: str | list[Message], temperature: float = 0.2
+        self, messages: str | list[Message], *, temperature: float = 0.2, extra: dict[str, typing.Any] | None = None
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
         payload: typing.Final = ChatCompletionsRequest(
             stream=True,
             model=self.config.model_name,
             messages=self._prepare_messages(messages),
             temperature=temperature,
+            **extra or {},
         ).model_dump(mode="json")
         try:
             async with self.http_client.stream(request=self._build_request(payload)) as response:

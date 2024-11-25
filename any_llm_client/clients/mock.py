@@ -19,7 +19,13 @@ class MockLLMConfig(LLMConfig):
 class MockLLMClient(LLMClient):
     config: MockLLMConfig
 
-    async def request_llm_message(self, messages: str | list[Message], temperature: float = 0.2) -> str:  # noqa: ARG002
+    async def request_llm_message(
+        self,
+        messages: str | list[Message],  # noqa: ARG002
+        *,
+        temperature: float = 0.2,  # noqa: ARG002
+        extra: dict[str, typing.Any] | None = None,  # noqa: ARG002
+    ) -> str:
         return self.config.response_message
 
     async def _iter_config_stream_messages(self) -> typing.AsyncIterable[str]:
@@ -30,7 +36,9 @@ class MockLLMClient(LLMClient):
     async def stream_llm_partial_messages(
         self,
         messages: str | list[Message],  # noqa: ARG002
+        *,
         temperature: float = 0.2,  # noqa: ARG002
+        extra: dict[str, typing.Any] | None = None,  # noqa: ARG002
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
         yield self._iter_config_stream_messages()
 

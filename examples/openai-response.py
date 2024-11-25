@@ -1,4 +1,4 @@
-import asyncio  # noqa: INP001
+import asyncio
 
 import any_llm_client
 
@@ -8,7 +8,7 @@ config = any_llm_client.OpenAIConfig(url="http://127.0.0.1:11434/v1/chat/complet
 
 async def main() -> None:
     async with any_llm_client.get_client(config) as client:
-        print(await client.request_llm_message("Кек, чо как вообще на нарах?"))  # noqa: T201
+        print(await client.request_llm_message("Кек, чо как вообще на нарах?"))
 
 
 asyncio.run(main())
