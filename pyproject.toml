@@ -8,13 +8,12 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries",
     "Topic :: System :: Networking",
     "Typing :: Typed",
 ]
 authors = [{ name = "Lev Vereshchagin", email = "mail@vrslev.com" }]
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 dependencies = [
     "httpx-sse>=0.4.0",
     "niquests>=3.11.1",
