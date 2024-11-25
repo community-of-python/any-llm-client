@@ -84,7 +84,7 @@ lines-after-imports = 2
 "tests/*.py" = ["S101", "S311"]
 
 [tool.pytest.ini_options]
-addopts = "--cov"
+addopts = "--cov=."
 
 [tool.coverage.report]
 skip_covered = true
