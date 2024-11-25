@@ -1,27 +1,40 @@
-import copy
 import typing
+from http import HTTPStatus
 
-import httpx
+import niquests
+import pytest
 
-from any_llm_client.http import DEFAULT_HTTP_TIMEOUT, get_http_client_from_kwargs
+from any_llm_client.http import HttpClient, HttpStatusError
+from any_llm_client.retry import RequestRetryConfig
 
 
-class TestGetHttpClientFromKwargs:
-    def test_http_timeout_is_added(self) -> None:
-        original_kwargs: typing.Final = {"mounts": {"http://": None}}
-        passed_kwargs: typing.Final = copy.deepcopy(original_kwargs)
+BASE_URL: typing.Final = "http://127.0.0.1:8000"
 
-        client: typing.Final = get_http_client_from_kwargs(passed_kwargs)
 
-        assert client.timeout == DEFAULT_HTTP_TIMEOUT
-        assert original_kwargs == passed_kwargs
+async def test_http_client_request_ok() -> None:
+    client: typing.Final = HttpClient(request_retry=RequestRetryConfig(), niquests_kwargs={})
+    result: typing.Final = await client.request(niquests.Request(method="GET", url=f"{BASE_URL}/request-ok"))
+    assert result == b'{"ok":true}'
 
-    def test_http_timeout_is_not_modified_if_set(self) -> None:
-        timeout: typing.Final = httpx.Timeout(7, connect=5, read=3)
-        original_kwargs: typing.Final = {"mounts": {"http://": None}, "timeout": timeout}
-        passed_kwargs: typing.Final = copy.deepcopy(original_kwargs)
 
-        client: typing.Final = get_http_client_from_kwargs(passed_kwargs)
+async def test_http_client_request_rail() -> None:
+    client: typing.Final = HttpClient(request_retry=RequestRetryConfig(), niquests_kwargs={})
+    with pytest.raises(HttpStatusError) as exc_info:
+        await client.request(niquests.Request(method="GET", url=f"{BASE_URL}/request-fail"))
+    assert exc_info.value.status_code == HTTPStatus.IM_A_TEAPOT
+    assert exc_info.value.content == b'{"ok":false}'
 
-        assert client.timeout == timeout
-        assert original_kwargs == passed_kwargs
+
+async def test_http_client_stream_ok() -> None:
+    client: typing.Final = HttpClient(request_retry=RequestRetryConfig(), niquests_kwargs={})
+    async with client.stream(niquests.Request(method="GET", url=f"{BASE_URL}/stream-ok")) as response:
+        result: typing.Final = [one_chunk async for one_chunk in response]
+    assert result == [b"ok", b"true"]
+
+
+async def test_http_client_stream_rail() -> None:
+    client: typing.Final = HttpClient(request_retry=RequestRetryConfig(), niquests_kwargs={})
+    with pytest.raises(HttpStatusError) as exc_info:
+        await client.stream(niquests.Request(method="GET", url=f"{BASE_URL}/stream-fail")).__aenter__()
+    assert exc_info.value.status_code == HTTPStatus.IM_A_TEAPOT
+    assert exc_info.value.content == b"ok\nfalse"

@@ -19,7 +19,7 @@ if typing.TYPE_CHECKING:
         config: AnyLLMConfig,
         *,
         request_retry: RequestRetryConfig | None = None,
-        **httpx_kwargs: typing.Any,  # noqa: ANN401
+        **niquests_kwargs: typing.Any,  # noqa: ANN401
     ) -> LLMClient: ...
 else:
 
@@ -28,7 +28,7 @@ else:
         config: typing.Any,  # noqa: ANN401, ARG001
         *,
         request_retry: RequestRetryConfig | None = None,  # noqa: ARG001
-        **httpx_kwargs: typing.Any,  # noqa: ANN401, ARG001
+        **niquests_kwargs: typing.Any,  # noqa: ANN401, ARG001
     ) -> LLMClient:
         raise AssertionError("unknown LLM config type")
 
@@ -37,24 +37,24 @@ else:
         config: YandexGPTConfig,
         *,
         request_retry: RequestRetryConfig | None = None,
-        **httpx_kwargs: typing.Any,  # noqa: ANN401
+        **niquests_kwargs: typing.Any,  # noqa: ANN401
     ) -> LLMClient:
-        return YandexGPTClient(config=config, request_retry=request_retry, **httpx_kwargs)
+        return YandexGPTClient(config=config, request_retry=request_retry, **niquests_kwargs)
 
     @get_client.register
     def _(
         config: OpenAIConfig,
         *,
         request_retry: RequestRetryConfig | None = None,
-        **httpx_kwargs: typing.Any,  # noqa: ANN401
+        **niquests_kwargs: typing.Any,  # noqa: ANN401
     ) -> LLMClient:
-        return OpenAIClient(config=config, request_retry=request_retry, **httpx_kwargs)
+        return OpenAIClient(config=config, request_retry=request_retry, **niquests_kwargs)
 
     @get_client.register
     def _(
         config: MockLLMConfig,
         *,
         request_retry: RequestRetryConfig | None = None,  # noqa: ARG001
-        **httpx_kwargs: typing.Any,  # noqa: ANN401, ARG001
+        **niquests_kwargs: typing.Any,  # noqa: ANN401, ARG001
     ) -> LLMClient:
         return MockLLMClient(config=config)

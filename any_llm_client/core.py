@@ -48,18 +48,6 @@ else:
         return Message(role=MessageRole.assistant, text=text)
 
 
-@dataclasses.dataclass
-class LLMError(Exception):
-    response_content: bytes
-
-    def __str__(self) -> str:
-        return self.__repr__().removeprefix(self.__class__.__name__)
-
-
-@dataclasses.dataclass
-class OutOfTokensOrSymbolsError(LLMError): ...
-
-
 class LLMConfig(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(protected_namespaces=())
     api_type: str
@@ -83,3 +71,15 @@ class LLMClient(typing.Protocol):
         exc_value: BaseException | None,
         traceback: types.TracebackType | None,
     ) -> None: ...
+
+
+@dataclasses.dataclass
+class LLMError(Exception):
+    response_content: bytes
+
+    def __str__(self) -> str:
+        return self.__repr__().removeprefix(self.__class__.__name__)
+
+
+@dataclasses.dataclass
+class OutOfTokensOrSymbolsError(LLMError): ...
