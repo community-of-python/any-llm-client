@@ -28,8 +28,8 @@ class HttpClient:
     _request_retry_dict: dict[str, typing.Any]
 
     @classmethod
-    def build(cls, request_retry: RequestRetryConfig, kwargs: dict[str, typing.Any]) -> typing_extensions.Self:
-        modified_kwargs: typing.Final = kwargs.copy()
+    def build(cls, request_retry: RequestRetryConfig, niquests_kwargs: dict[str, typing.Any]) -> typing_extensions.Self:
+        modified_kwargs: typing.Final = niquests_kwargs.copy()
         timeout: typing.Final = modified_kwargs.pop("timeout", DEFAULT_HTTP_TIMEOUT)
         proxies: typing.Final = modified_kwargs.pop("proxies", None)
 
