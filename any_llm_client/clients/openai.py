@@ -99,10 +99,12 @@ def _make_user_assistant_alternate_messages(
         yield ChatCompletionsMessage(role=current_message_role, content="\n\n".join(current_message_content_chunks))
 
 
-def _handle_status_error(*, status_code: int, content: bytes) -> typing.NoReturn:
-    if status_code == HTTPStatus.BAD_REQUEST and b"Please reduce the length of the messages" in content:  # vLLM
-        raise OutOfTokensOrSymbolsError(response_content=content)
-    raise LLMError(response_content=content)
+def _handle_status_error(error: HttpStatusError) -> typing.NoReturn:
+    if (
+        error.status_code == HTTPStatus.BAD_REQUEST and b"Please reduce the length of the messages" in error.content
+    ):  # vLLM
+        raise OutOfTokensOrSymbolsError(response_content=error.content)
+    raise LLMError(response_content=error.content)
 
 
 @dataclasses.dataclass(slots=True, init=False)
@@ -155,7 +157,7 @@ class OpenAIClient(LLMClient):
         try:
             response: typing.Final = await self.http_client.request(self._build_request(payload))
         except HttpStatusError as exception:
-            _handle_status_error(status_code=exception.status_code, content=exception.content)
+            _handle_status_error(exception)
         return ChatCompletionsNotStreamingResponse.model_validate_json(response).choices[0].message.content
 
     async def _iter_partial_responses(self, response: typing.AsyncIterable[bytes]) -> typing.AsyncIterable[str]:
@@ -184,7 +186,7 @@ class OpenAIClient(LLMClient):
             async with self.http_client.stream(request=self._build_request(payload)) as response:
                 yield self._iter_partial_responses(response)
         except HttpStatusError as exception:
-            _handle_status_error(status_code=exception.status_code, content=exception.content)
+            _handle_status_error(exception)
 
     async def __aenter__(self) -> typing_extensions.Self:
         await self.http_client.__aenter__()
