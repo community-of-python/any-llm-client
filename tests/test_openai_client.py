@@ -2,7 +2,6 @@ import typing
 from unittest import mock
 
 import faker
-import httpx
 import pydantic
 import pytest
 from polyfactory.factories.pydantic_factory import ModelFactory
@@ -150,11 +149,10 @@ class TestOpenAILLMErrors:
             b'{"object":"error","message":"This model\'s maximum context length is 16384 tokens. However, you requested 100000 tokens in the messages, Please reduce the length of the messages.","type":"BadRequestError","param":null,"code":400}',  # noqa: E501
         ],
     )
-    async def test_fails_with_out_of_tokens_error(self, stream: bool, content: bytes | None) -> None:
-        response: typing.Final = httpx.Response(400, content=content)
-        client: typing.Final = any_llm_client.get_client(
-            OpenAIConfigFactory.build(), transport=httpx.MockTransport(lambda _: response)
-        )
+    async def test_fails_with_out_of_tokens_error(self, stream: bool, content: bytes) -> None:
+        client: typing.Final = any_llm_client.get_client(OpenAIConfigFactory.build())
+        error: typing.Final = HttpStatusError(status_code=400, content=content)
+        mock_http_client(client, request=mock.AsyncMock(side_effect=error), stream=mock.AsyncMock(side_effect=error))
 
         coroutine: typing.Final = (
             consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
