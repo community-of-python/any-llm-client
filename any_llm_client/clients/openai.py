@@ -19,8 +19,9 @@ from any_llm_client.core import (
     OutOfTokensOrSymbolsError,
     UserMessage,
 )
-from any_llm_client.http import HttpClient, HttpStatusError, parse_sse_events
+from any_llm_client.http import HttpClient, HttpStatusError
 from any_llm_client.retry import RequestRetryConfig
+from any_llm_client.sse import parse_sse_events
 
 
 OPENAI_AUTH_TOKEN_ENV_NAME: typing.Final = "ANY_LLM_CLIENT_OPENAI_AUTH_TOKEN"
