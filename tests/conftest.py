@@ -40,7 +40,7 @@ async def consume_llm_partial_responses(
 
 def make_async_stream_iterable(lines: str) -> typing.Any:  # noqa: ANN401
     async def iter_lines() -> typing.AsyncIterable[bytes]:
-        for line in lines.split("\n"):
+        for line in lines.splitlines():
             yield line.encode()
 
     return iter_lines()
