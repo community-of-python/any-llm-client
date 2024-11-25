@@ -1,5 +1,3 @@
-import asyncio
-import contextlib
 import typing
 from unittest import mock
 
@@ -38,48 +36,17 @@ def mock_http_client(
     assert hasattr(llm_client, "http_client")
     http_client_mock: typing.Final = mock.Mock(request=request)
     http_client_mock.stream = mock.Mock(
-        return_value=mock.Mock(__aenter__=mock.AsyncMock(return_value=stream), __aexit__=mock.AsyncMock())
+        return_value=mock.Mock(
+            __aenter__=mock.AsyncMock(return_value=stream), __aexit__=mock.AsyncMock(return_value=None)
+        )
     )
-    # http_client_mock.stream.return_value = mock.AsyncMock()
-    # http_client_mock.stream.__aenter__.return_value = stream
-
-    # stream_mock: typing.Final = mock.Mock(__aenter__=mock.AsyncMock(return_value=stream), __aexit__=mock.AsyncMock())
-
     llm_client.http_client = http_client_mock
-    # llm_client.http_client.stream = mock.Mock(__aenter__=mock.Mock(return_value=stream))
-
-
-def make_http_client_stream_mock(lines: str) -> typing.Any:  # noqa: ANN401
-    @contextlib.asynccontextmanager
-    async def mock_stream(
-        *_args: object, **_kwargs: object
-    ) -> typing.AsyncGenerator[typing.AsyncIterable[bytes], None]:
-        async def iter_lines() -> typing.AsyncIterable[bytes]:
-            for line in lines.splitlines():
-                yield line.encode()
-            await asyncio.sleep(0)
-
-        yield iter_lines()
-
-    return mock_stream
-
-
-def make_http_client_stream_raises_mock(error: Exception) -> typing.Any:  # noqa: ANN401
-    @contextlib.asynccontextmanager
-    async def mock_stream(
-        *_args: object, **_kwargs: object
-    ) -> typing.AsyncGenerator[typing.AsyncIterable[bytes], None]:
-        raise error
-        yield
-
-    return mock_stream
 
 
 def make_async_iterable(lines: str) -> typing.Any:  # noqa: ANN401
     async def iter_lines() -> typing.AsyncIterable[bytes]:
-        for line in lines.splitlines():
+        for line in lines.split("\n"):
             yield line.encode()
-            await asyncio.sleep(0)
 
     return iter_lines()
 
@@ -131,8 +98,6 @@ class TestOpenAIRequestLLMPartialResponses:
             "Hi there. How is you",
             "Hi there. How is your day?",
         ]
-        config: typing.Final = OpenAIConfigFactory.build()
-        func_request: typing.Final = LLMFuncRequestFactory.build()
         response: typing.Final = (
             "\n\n".join(
                 "data: "
@@ -141,10 +106,12 @@ class TestOpenAIRequestLLMPartialResponses:
             )
             + f"\n\ndata: [DONE]\n\ndata: {faker.pystr()}\n\n"
         )
-        client: typing.Final = any_llm_client.get_client(config)
+        client: typing.Final = any_llm_client.get_client(OpenAIConfigFactory.build())
         mock_http_client(client, stream=make_async_iterable(response))
 
-        result: typing.Final = await consume_llm_partial_responses(client.stream_llm_partial_messages(**func_request))
+        result: typing.Final = await consume_llm_partial_responses(
+            client.stream_llm_partial_messages(**LLMFuncRequestFactory.build())
+        )
 
         assert result == expected_result
 
@@ -156,10 +123,7 @@ class TestOpenAIRequestLLMPartialResponses:
         mock_http_client(client, stream=make_async_iterable(response))
 
         with pytest.raises(pydantic.ValidationError):
-            t: typing.Final = await consume_llm_partial_responses(
-                client.stream_llm_partial_messages(**LLMFuncRequestFactory.build())
-            )
-            print(t)
+            await consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
 
 
 class TestOpenAILLMErrors:
@@ -168,12 +132,7 @@ class TestOpenAILLMErrors:
     async def test_fails_with_unknown_error(self, stream: bool, status_code: int) -> None:
         client: typing.Final = any_llm_client.get_client(OpenAIConfigFactory.build())
         error: typing.Final = HttpStatusError(status_code=status_code, content=b"")
-        make_http_client_stream_raises_mock(error)
-
-        if stream:
-            mock_http_client(client, stream=make_http_client_stream_raises_mock(error))
-        else:
-            mock_http_client(client, request=mock.AsyncMock())
+        mock_http_client(client, request=mock.AsyncMock(side_effect=error), stream=mock.AsyncMock(side_effect=error))
 
         coroutine: typing.Final = (
             consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
