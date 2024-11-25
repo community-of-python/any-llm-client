@@ -198,4 +198,4 @@ class OpenAIClient(LLMClient):
         exc_value: BaseException | None,
         traceback: types.TracebackType | None,
     ) -> None:
-        await self.http_client.__aexit__(exc_type, exc_value, traceback)
+        await self.http_client.__aexit__(exc_type=exc_type, exc_value=exc_value, traceback=traceback)
