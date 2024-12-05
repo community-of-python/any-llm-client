@@ -6,7 +6,8 @@ import typing
 from http import HTTPStatus
 
 import annotated_types
-import niquests
+import httpx
+import httpx_sse
 import pydantic
 import typing_extensions
 
@@ -19,9 +20,8 @@ from any_llm_client.core import (
     OutOfTokensOrSymbolsError,
     UserMessage,
 )
-from any_llm_client.http import HttpClient, HttpStatusError
+from any_llm_client.http import get_http_client_from_kwargs, make_http_request, make_streaming_http_request
 from any_llm_client.retry import RequestRetryConfig
-from any_llm_client.sse import parse_sse_events
 
 
 OPENAI_AUTH_TOKEN_ENV_NAME: typing.Final = "ANY_LLM_CLIENT_OPENAI_AUTH_TOKEN"
@@ -99,18 +99,16 @@ def _make_user_assistant_alternate_messages(
         yield ChatCompletionsMessage(role=current_message_role, content="\n\n".join(current_message_content_chunks))
 
 
-def _handle_status_error(error: HttpStatusError) -> typing.NoReturn:
-    if (
-        error.status_code == HTTPStatus.BAD_REQUEST and b"Please reduce the length of the messages" in error.content
-    ):  # vLLM
-        raise OutOfTokensOrSymbolsError(response_content=error.content)
-    raise LLMError(response_content=error.content)
+def _handle_status_error(*, status_code: int, content: bytes) -> typing.NoReturn:
+    if status_code == HTTPStatus.BAD_REQUEST and b"Please reduce the length of the messages" in content:  # vLLM
+        raise OutOfTokensOrSymbolsError(response_content=content)
+    raise LLMError(response_content=content)
 
 
 @dataclasses.dataclass(slots=True, init=False)
 class OpenAIClient(LLMClient):
     config: OpenAIConfig
-    http_client: HttpClient
+    httpx_client: httpx.AsyncClient
     request_retry: RequestRetryConfig
 
     def __init__(
@@ -118,15 +116,14 @@ class OpenAIClient(LLMClient):
         config: OpenAIConfig,
         *,
         request_retry: RequestRetryConfig | None = None,
-        **niquests_kwargs: typing.Any,  # noqa: ANN401
+        **httpx_kwargs: typing.Any,  # noqa: ANN401
     ) -> None:
         self.config = config
-        self.http_client = HttpClient(
-            request_retry=request_retry or RequestRetryConfig(), niquests_kwargs=niquests_kwargs
-        )
+        self.request_retry = request_retry or RequestRetryConfig()
+        self.httpx_client = get_http_client_from_kwargs(httpx_kwargs)
 
-    def _build_request(self, payload: dict[str, typing.Any]) -> niquests.Request:
-        return niquests.Request(
+    def _build_request(self, payload: dict[str, typing.Any]) -> httpx.Request:
+        return self.httpx_client.build_request(
             method="POST",
             url=str(self.config.url),
             json=payload,
@@ -155,16 +152,23 @@ class OpenAIClient(LLMClient):
             **extra or {},
         ).model_dump(mode="json")
         try:
-            response: typing.Final = await self.http_client.request(self._build_request(payload))
-        except HttpStatusError as exception:
-            _handle_status_error(exception)
-        return ChatCompletionsNotStreamingResponse.model_validate_json(response).choices[0].message.content
+            response: typing.Final = await make_http_request(
+                httpx_client=self.httpx_client,
+                request_retry=self.request_retry,
+                build_request=lambda: self._build_request(payload),
+            )
+        except httpx.HTTPStatusError as exception:
+            _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
+        try:
+            return ChatCompletionsNotStreamingResponse.model_validate_json(response.content).choices[0].message.content
+        finally:
+            await response.aclose()
 
-    async def _iter_response_chunks(self, response: typing.AsyncIterable[bytes]) -> typing.AsyncIterable[str]:
-        async for one_event in parse_sse_events(response):
-            if one_event.data == "[DONE]":
+    async def _iter_response_chunks(self, response: httpx.Response) -> typing.AsyncIterable[str]:
+        async for event in httpx_sse.EventSource(response).aiter_sse():
+            if event.data == "[DONE]":
                 break
-            validated_response = ChatCompletionsStreamingEvent.model_validate_json(one_event.data)
+            validated_response = ChatCompletionsStreamingEvent.model_validate_json(event.data)
             if not (one_chunk := validated_response.choices[0].delta.content):
                 continue
             yield one_chunk
@@ -181,13 +185,19 @@ class OpenAIClient(LLMClient):
             **extra or {},
         ).model_dump(mode="json")
         try:
-            async with self.http_client.stream(request=self._build_request(payload)) as response:
+            async with make_streaming_http_request(
+                httpx_client=self.httpx_client,
+                request_retry=self.request_retry,
+                build_request=lambda: self._build_request(payload),
+            ) as response:
                 yield self._iter_response_chunks(response)
-        except HttpStatusError as exception:
-            _handle_status_error(exception)
+        except httpx.HTTPStatusError as exception:
+            content: typing.Final = await exception.response.aread()
+            await exception.response.aclose()
+            _handle_status_error(status_code=exception.response.status_code, content=content)
 
     async def __aenter__(self) -> typing_extensions.Self:
-        await self.http_client.__aenter__()
+        await self.httpx_client.__aenter__()
         return self
 
     async def __aexit__(
@@ -196,4 +206,4 @@ class OpenAIClient(LLMClient):
         exc_value: BaseException | None,
         traceback: types.TracebackType | None,
     ) -> None:
-        await self.http_client.__aexit__(exc_type=exc_type, exc_value=exc_value, traceback=traceback)
+        await self.httpx_client.__aexit__(exc_type=exc_type, exc_value=exc_value, traceback=traceback)
