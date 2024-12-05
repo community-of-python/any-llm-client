@@ -170,7 +170,7 @@ class OpenAIClient(LLMClient):
             yield one_chunk
 
     @contextlib.asynccontextmanager
-    async def stream_llm_partial_messages(
+    async def stream_llm_message_chunks(
         self, messages: str | list[Message], *, temperature: float = 0.2, extra: dict[str, typing.Any] | None = None
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
         payload: typing.Final = ChatCompletionsRequest(

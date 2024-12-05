@@ -84,7 +84,7 @@ class TestOpenAIRequestLLMPartialResponses:
         )
 
         result: typing.Final = await consume_llm_partial_responses(
-            client.stream_llm_partial_messages(**LLMFuncRequestFactory.build())
+            client.stream_llm_message_chunks(**LLMFuncRequestFactory.build())
         )
 
         assert result == expected_result
@@ -98,7 +98,7 @@ class TestOpenAIRequestLLMPartialResponses:
         )
 
         with pytest.raises(pydantic.ValidationError):
-            await consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
+            await consume_llm_partial_responses(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
 
 
 class TestOpenAILLMErrors:
@@ -111,7 +111,7 @@ class TestOpenAILLMErrors:
         )
 
         coroutine: typing.Final = (
-            consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
+            consume_llm_partial_responses(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
             if stream
             else client.request_llm_message(**LLMFuncRequestFactory.build())
         )
@@ -135,7 +135,7 @@ class TestOpenAILLMErrors:
         )
 
         coroutine: typing.Final = (
-            consume_llm_partial_responses(client.stream_llm_partial_messages(**LLMFuncRequestFactory.build()))
+            consume_llm_partial_responses(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
             if stream
             else client.request_llm_message(**LLMFuncRequestFactory.build())
         )

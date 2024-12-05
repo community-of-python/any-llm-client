@@ -9,7 +9,7 @@ config = any_llm_client.OpenAIConfig(url="http://127.0.0.1:11434/v1/chat/complet
 async def main() -> None:
     async with (
         any_llm_client.get_client(config) as client,
-        client.stream_llm_partial_messages("Кек, чо как вообще на нарах?") as partial_messages,
+        client.stream_llm_message_chunks("Кек, чо как вообще на нарах?") as partial_messages,
     ):
         async for message in partial_messages:
             print(message, end="", flush=True)
