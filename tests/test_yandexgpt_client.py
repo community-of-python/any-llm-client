@@ -9,7 +9,7 @@ from polyfactory.factories.pydantic_factory import ModelFactory
 import any_llm_client
 from any_llm_client.clients.yandexgpt import YandexGPTAlternative, YandexGPTResponse, YandexGPTResult
 from any_llm_client.http import HttpStatusError
-from tests.conftest import LLMFuncRequestFactory, consume_llm_partial_responses, mock_http_client
+from tests.conftest import LLMFuncRequestFactory, consume_llm_message_chunks, mock_http_client
 
 
 class YandexGPTConfigFactory(ModelFactory[any_llm_client.YandexGPTConfig]): ...
@@ -43,7 +43,7 @@ class TestYandexGPTRequestLLMResponse:
             await client.request_llm_message(**LLMFuncRequestFactory.build())
 
 
-class TestYandexGPTRequestLLMPartialResponses:
+class TestYandexGPTRequestLLMMessageChunks:
     async def test_ok(self, faker: faker.Faker) -> None:
         expected_result: typing.Final = faker.pylist(value_types=[str])
         func_request: typing.Final = LLMFuncRequestFactory.build()
@@ -51,7 +51,11 @@ class TestYandexGPTRequestLLMPartialResponses:
             "\n".join(
                 YandexGPTResponse(
                     result=YandexGPTResult(
-                        alternatives=[YandexGPTAlternative(message=any_llm_client.AssistantMessage("".join(expected_result[:one_index+1])))]
+                        alternatives=[
+                            YandexGPTAlternative(
+                                message=any_llm_client.AssistantMessage("".join(expected_result[: one_index + 1]))
+                            )
+                        ]
                     )
                 ).model_dump_json()
                 for one_index in range(len(expected_result))
@@ -62,7 +66,7 @@ class TestYandexGPTRequestLLMPartialResponses:
             any_llm_client.get_client(YandexGPTConfigFactory.build()), mock.AsyncMock(return_value=response)
         )
 
-        result: typing.Final = await consume_llm_partial_responses(client.stream_llm_message_chunks(**func_request))
+        result: typing.Final = await consume_llm_message_chunks(client.stream_llm_message_chunks(**func_request))
 
         assert result == expected_result
 
@@ -75,7 +79,7 @@ class TestYandexGPTRequestLLMPartialResponses:
         )
 
         with pytest.raises(pydantic.ValidationError):
-            await consume_llm_partial_responses(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
+            await consume_llm_message_chunks(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
 
 
 class TestYandexGPTLLMErrors:
@@ -88,7 +92,7 @@ class TestYandexGPTLLMErrors:
         )
 
         coroutine: typing.Final = (
-            consume_llm_partial_responses(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
+            consume_llm_message_chunks(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
             if stream
             else client.request_llm_message(**LLMFuncRequestFactory.build())
         )
@@ -112,7 +116,7 @@ class TestYandexGPTLLMErrors:
         )
 
         coroutine: typing.Final = (
-            consume_llm_partial_responses(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
+            consume_llm_message_chunks(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
             if stream
             else client.request_llm_message(**LLMFuncRequestFactory.build())
         )

@@ -16,7 +16,7 @@ from any_llm_client.clients.openai import (
     OneStreamingChoiceDelta,
 )
 from any_llm_client.http import HttpStatusError
-from tests.conftest import LLMFuncRequestFactory, consume_llm_partial_responses, mock_http_client
+from tests.conftest import LLMFuncRequestFactory, consume_llm_message_chunks, mock_http_client
 
 
 class OpenAIConfigFactory(ModelFactory[any_llm_client.OpenAIConfig]): ...
@@ -50,7 +50,7 @@ class TestOpenAIRequestLLMResponse:
             await client.request_llm_message(**LLMFuncRequestFactory.build())
 
 
-class TestOpenAIRequestLLMPartialResponses:
+class TestOpenAIRequestLLMMessageChunks:
     async def test_ok(self, faker: faker.Faker) -> None:
         generated_messages: typing.Final = [
             OneStreamingChoiceDelta(role=any_llm_client.MessageRole.assistant),
@@ -83,7 +83,7 @@ class TestOpenAIRequestLLMPartialResponses:
             any_llm_client.get_client(OpenAIConfigFactory.build()), mock.AsyncMock(return_value=response)
         )
 
-        result: typing.Final = await consume_llm_partial_responses(
+        result: typing.Final = await consume_llm_message_chunks(
             client.stream_llm_message_chunks(**LLMFuncRequestFactory.build())
         )
 
@@ -98,7 +98,7 @@ class TestOpenAIRequestLLMPartialResponses:
         )
 
         with pytest.raises(pydantic.ValidationError):
-            await consume_llm_partial_responses(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
+            await consume_llm_message_chunks(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
 
 
 class TestOpenAILLMErrors:
@@ -111,7 +111,7 @@ class TestOpenAILLMErrors:
         )
 
         coroutine: typing.Final = (
-            consume_llm_partial_responses(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
+            consume_llm_message_chunks(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
             if stream
             else client.request_llm_message(**LLMFuncRequestFactory.build())
         )
@@ -135,7 +135,7 @@ class TestOpenAILLMErrors:
         )
 
         coroutine: typing.Final = (
-            consume_llm_partial_responses(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
+            consume_llm_message_chunks(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
             if stream
             else client.request_llm_message(**LLMFuncRequestFactory.build())
         )
