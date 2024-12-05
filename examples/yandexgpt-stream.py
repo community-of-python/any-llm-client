@@ -15,8 +15,7 @@ async def main() -> None:
         client.stream_llm_partial_messages("Кек, чо как вообще на нарах?") as partial_messages,
     ):
         async for message in partial_messages:
-            print("\033[2J")  # clear screen
-            print(message)
+            print(message, end="", flush=True)
 
 
 asyncio.run(main())

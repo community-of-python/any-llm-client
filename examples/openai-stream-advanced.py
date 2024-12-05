@@ -18,8 +18,7 @@ async def main() -> None:
         ) as partial_messages,
     ):
         async for message in partial_messages:
-            print("\033[2J")  # clear screen
-            print(message)
+            print(message, end="", flush=True)
 
 
 asyncio.run(main())
