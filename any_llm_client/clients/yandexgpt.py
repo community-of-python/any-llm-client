@@ -128,11 +128,11 @@ class YandexGPTClient(LLMClient):
         return YandexGPTResponse.model_validate_json(response).result.alternatives[0].message.text
 
     async def _iter_response_chunks(self, response: typing.AsyncIterable[bytes]) -> typing.AsyncIterable[str]:
-        previous_cursor = None
+        previous_cursor = 0
         async for one_line in response:
             validated_response = YandexGPTResponse.model_validate_json(one_line)
             response_text = validated_response.result.alternatives[0].message.text
-            yield response_text[previous_cursor:] if previous_cursor else response_text
+            yield response_text[previous_cursor:]
             previous_cursor = len(response_text)
 
     @contextlib.asynccontextmanager
