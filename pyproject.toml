@@ -82,7 +82,7 @@ lines-after-imports = 2
 "examples/*.py" = ["INP001", "T201"]
 
 [tool.pytest.ini_options]
-addopts = "--cov"
+addopts = "--cov=."
 
 [tool.coverage.report]
 skip_covered = true
