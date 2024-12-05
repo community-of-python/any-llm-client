@@ -131,13 +131,16 @@ class YandexGPTClient(LLMClient):
 
         return YandexGPTResponse.model_validate_json(response.content).result.alternatives[0].message.text
 
-    async def _iter_completion_messages(self, response: httpx.Response) -> typing.AsyncIterable[str]:
+    async def _iter_response_chunks(self, response: httpx.Response) -> typing.AsyncIterable[str]:
+        previous_cursor = 0
         async for one_line in response.aiter_lines():
             validated_response = YandexGPTResponse.model_validate_json(one_line)
-            yield validated_response.result.alternatives[0].message.text
+            response_text = validated_response.result.alternatives[0].message.text
+            yield response_text[previous_cursor:]
+            previous_cursor = len(response_text)
 
     @contextlib.asynccontextmanager
-    async def stream_llm_partial_messages(
+    async def stream_llm_message_chunks(
         self, messages: str | list[Message], *, temperature: float = 0.2, extra: dict[str, typing.Any] | None = None
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
         payload: typing.Final = self._prepare_payload(
@@ -150,7 +153,7 @@ class YandexGPTClient(LLMClient):
                 request_retry=self.request_retry,
                 build_request=lambda: self._build_request(payload),
             ) as response:
-                yield self._iter_completion_messages(response)
+                yield self._iter_response_chunks(response)
         except httpx.HTTPStatusError as exception:
             content: typing.Final = await exception.response.aread()
             await exception.response.aclose()

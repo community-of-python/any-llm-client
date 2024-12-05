@@ -164,19 +164,17 @@ class OpenAIClient(LLMClient):
         finally:
             await response.aclose()
 
-    async def _iter_partial_responses(self, response: httpx.Response) -> typing.AsyncIterable[str]:
-        text_chunks: typing.Final = []
+    async def _iter_response_chunks(self, response: httpx.Response) -> typing.AsyncIterable[str]:
         async for event in httpx_sse.EventSource(response).aiter_sse():
             if event.data == "[DONE]":
                 break
             validated_response = ChatCompletionsStreamingEvent.model_validate_json(event.data)
             if not (one_chunk := validated_response.choices[0].delta.content):
                 continue
-            text_chunks.append(one_chunk)
-            yield "".join(text_chunks)
+            yield one_chunk
 
     @contextlib.asynccontextmanager
-    async def stream_llm_partial_messages(
+    async def stream_llm_message_chunks(
         self, messages: str | list[Message], *, temperature: float = 0.2, extra: dict[str, typing.Any] | None = None
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
         payload: typing.Final = ChatCompletionsRequest(
@@ -192,7 +190,7 @@ class OpenAIClient(LLMClient):
                 request_retry=self.request_retry,
                 build_request=lambda: self._build_request(payload),
             ) as response:
-                yield self._iter_partial_responses(response)
+                yield self._iter_response_chunks(response)
         except httpx.HTTPStatusError as exception:
             content: typing.Final = await exception.response.aread()
             await exception.response.aclose()

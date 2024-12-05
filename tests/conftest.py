@@ -27,9 +27,9 @@ class LLMFuncRequest(typing.TypedDict):
 class LLMFuncRequestFactory(TypedDictFactory[LLMFuncRequest]): ...
 
 
-async def consume_llm_partial_responses(
-    request_llm_partial_responses_context_manager: contextlib._AsyncGeneratorContextManager[typing.AsyncIterable[str]],
+async def consume_llm_message_chunks(
+    stream_llm_message_chunks_context_manager: contextlib._AsyncGeneratorContextManager[typing.AsyncIterable[str]],
     /,
 ) -> list[str]:
-    async with request_llm_partial_responses_context_manager as response_iterable:
+    async with stream_llm_message_chunks_context_manager as response_iterable:
         return [one_item async for one_item in response_iterable]

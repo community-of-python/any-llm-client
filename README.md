@@ -58,17 +58,14 @@ config = any_llm_client.OpenAIConfig(url="http://127.0.0.1:11434/v1/chat/complet
 async def main() -> None:
     async with (
         any_llm_client.get_client(config) as client,
-        client.stream_llm_partial_messages("Кек, чо как вообще на нарах?") as partial_messages,
+        client.stream_llm_message_chunks("Кек, чо как вообще на нарах?") as message_chunks,
     ):
-        async for message in partial_messages:
-            print("\033[2J")  # clear screen
-            print(message)
+        async for chunk in message_chunks:
+            print(chunk, end="", flush=True)
 
 
 asyncio.run(main())
 ```
-
-Note that this will yield partial growing message, not message chunks, for example: "Hi", "Hi there!", "Hi there! How can I help you?".
 
 ### Passing chat history and temperature
 
@@ -77,13 +74,13 @@ You can pass list of messages instead of `str` as the first argument, and set `t
 ```python
 async with (
     any_llm_client.get_client(config) as client,
-    client.stream_llm_partial_messages(
+    client.stream_llm_message_chunks(
         messages=[
             any_llm_client.SystemMessage("Ты — опытный ассистент"),
             any_llm_client.UserMessage("Кек, чо как вообще на нарах?"),
         ],
         temperature=1.0,
-    ) as partial_messages,
+    ) as message_chunks,
 ):
     ...
 ```
@@ -157,7 +154,7 @@ async with any_llm_client.OpenAIClient(config, ...) as client:
 
 #### Errors
 
-`any_llm_client.LLMClient.request_llm_message()` and `any_llm_client.LLMClient.stream_llm_partial_messages()` will raise `any_llm_client.LLMError` or `any_llm_client.OutOfTokensOrSymbolsError` when the LLM API responds with a failed HTTP status.
+`any_llm_client.LLMClient.request_llm_message()` and `any_llm_client.LLMClient.stream_llm_message_chunks()` will raise `any_llm_client.LLMError` or `any_llm_client.OutOfTokensOrSymbolsError` when the LLM API responds with a failed HTTP status.
 
 #### Timeouts, proxy & other HTTP settings
 
