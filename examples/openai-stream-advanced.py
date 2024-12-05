@@ -15,10 +15,10 @@ async def main() -> None:
                 any_llm_client.UserMessage("Кек, чо как вообще на нарах?"),
             ],
             temperature=1.0,
-        ) as partial_messages,
+        ) as message_chunks,
     ):
-        async for message in partial_messages:
-            print(message, end="", flush=True)
+        async for chunk in message_chunks:
+            print(chunk, end="", flush=True)
 
 
 asyncio.run(main())

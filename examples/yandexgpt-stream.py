@@ -12,10 +12,10 @@ config = any_llm_client.YandexGPTConfig(
 async def main() -> None:
     async with (
         any_llm_client.get_client(config) as client,
-        client.stream_llm_message_chunks("Кек, чо как вообще на нарах?") as partial_messages,
+        client.stream_llm_message_chunks("Кек, чо как вообще на нарах?") as message_chunks,
     ):
-        async for message in partial_messages:
-            print(message, end="", flush=True)
+        async for chunk in message_chunks:
+            print(chunk, end="", flush=True)
 
 
 asyncio.run(main())

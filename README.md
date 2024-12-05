@@ -60,9 +60,8 @@ async def main() -> None:
         any_llm_client.get_client(config) as client,
         client.stream_llm_message_chunks("Кек, чо как вообще на нарах?") as partial_messages,
     ):
-        async for message in partial_messages:
-            print("\033[2J")  # clear screen
-            print(message)
+        async for chunk in message_chunks:
+            print(chunk, end="", flush=True)
 
 
 asyncio.run(main())
