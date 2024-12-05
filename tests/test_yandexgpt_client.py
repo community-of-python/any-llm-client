@@ -51,10 +51,10 @@ class TestYandexGPTRequestLLMPartialResponses:
             "\n".join(
                 YandexGPTResponse(
                     result=YandexGPTResult(
-                        alternatives=[YandexGPTAlternative(message=any_llm_client.AssistantMessage(one_text))]
+                        alternatives=[YandexGPTAlternative(message=any_llm_client.AssistantMessage("".join(expected_result[:one_index+1])))]
                     )
                 ).model_dump_json()
-                for one_text in expected_result
+                for one_index in range(len(expected_result))
             )
             + "\n"
         )
