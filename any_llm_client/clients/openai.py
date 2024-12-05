@@ -160,16 +160,14 @@ class OpenAIClient(LLMClient):
             _handle_status_error(exception)
         return ChatCompletionsNotStreamingResponse.model_validate_json(response).choices[0].message.content
 
-    async def _iter_partial_responses(self, response: typing.AsyncIterable[bytes]) -> typing.AsyncIterable[str]:
-        text_chunks: typing.Final = []
+    async def _iter_response_chunks(self, response: typing.AsyncIterable[bytes]) -> typing.AsyncIterable[str]:
         async for one_event in parse_sse_events(response):
             if one_event.data == "[DONE]":
                 break
             validated_response = ChatCompletionsStreamingEvent.model_validate_json(one_event.data)
             if not (one_chunk := validated_response.choices[0].delta.content):
                 continue
-            text_chunks.append(one_chunk)
-            yield "".join(text_chunks)
+            yield one_chunk
 
     @contextlib.asynccontextmanager
     async def stream_llm_partial_messages(
@@ -184,7 +182,7 @@ class OpenAIClient(LLMClient):
         ).model_dump(mode="json")
         try:
             async with self.http_client.stream(request=self._build_request(payload)) as response:
-                yield self._iter_partial_responses(response)
+                yield self._iter_response_chunks(response)
         except HttpStatusError as exception:
             _handle_status_error(exception)
 

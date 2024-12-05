@@ -65,11 +65,11 @@ class TestOpenAIRequestLLMPartialResponses:
         ]
         expected_result: typing.Final = [
             "H",
-            "Hi",
-            "Hi t",
-            "Hi there",
-            "Hi there. How is you",
-            "Hi there. How is your day?",
+            "i",
+            " t",
+            "here",
+            ". How is you",
+            "r day?",
         ]
         response: typing.Final = (
             "\n\n".join(
