@@ -24,7 +24,7 @@ from any_llm_client.http import get_http_client_from_kwargs, make_http_request, 
 from any_llm_client.retry import RequestRetryConfig
 
 
-OPENAI_AUTH_TOKEN_ENV_NAME: typing.Final = "ANY_LLM_CLIENT_OPENAI_AUTH_TOKEN"
+OPENAI_AUTH_TOKEN_ENV_NAME: typing.Final = "ANY_LLM_CLIENT_OPENAI_AUTH_TOKEN"  # noqa: S105
 
 
 class OpenAIConfig(LLMConfig):
