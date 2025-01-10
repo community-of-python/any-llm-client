@@ -17,9 +17,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: extractions/setup-just@v2
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v5
         with:
-          enable-cache: true
           cache-dependency-glob: "**/pyproject.toml"
       - run: just lint
 
@@ -36,9 +35,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: extractions/setup-just@v2
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v5
         with:
-          enable-cache: true
           cache-dependency-glob: "**/pyproject.toml"
       - run: uv venv --python ${{ matrix.python-version }}
       - run: just test -vv
