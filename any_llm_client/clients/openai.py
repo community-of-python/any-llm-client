@@ -34,6 +34,7 @@ class OpenAIConfig(LLMConfig):
         url: pydantic.HttpUrl
     auth_token: str | None = pydantic.Field(default_factory=lambda: os.environ.get(OPENAI_AUTH_TOKEN_ENV_NAME))
     model_name: str
+    request_extra: dict[str, typing.Any] = pydantic.Field(default_factory=dict)
     force_user_assistant_message_alternation: bool = False
     "Gemma 2 doesn't support {role: system, text: ...} message, and requires alternated messages"
     api_type: typing.Literal["openai"] = "openai"
@@ -149,7 +150,7 @@ class OpenAIClient(LLMClient):
             model=self.config.model_name,
             messages=self._prepare_messages(messages),
             temperature=temperature,
-            **extra or {},
+            **self.config.request_extra | (extra or {}),
         ).model_dump(mode="json")
         try:
             response: typing.Final = await make_http_request(
@@ -182,7 +183,7 @@ class OpenAIClient(LLMClient):
             model=self.config.model_name,
             messages=self._prepare_messages(messages),
             temperature=temperature,
-            **extra or {},
+            **self.config.request_extra | (extra or {}),
         ).model_dump(mode="json")
         try:
             async with make_streaming_http_request(

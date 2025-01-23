@@ -23,7 +23,11 @@ import asyncio
 import any_llm_client
 
 
-config = any_llm_client.OpenAIConfig(url="http://127.0.0.1:11434/v1/chat/completions", model_name="qwen2.5-coder:1.5b")
+config = any_llm_client.OpenAIConfig(
+    url="http://127.0.0.1:11434/v1/chat/completions", 
+    model_name="qwen2.5-coder:1.5b",
+    request_extra={"best_of": 3}
+)
 
 
 async def main() -> None:
@@ -52,7 +56,11 @@ import asyncio
 import any_llm_client
 
 
-config = any_llm_client.OpenAIConfig(url="http://127.0.0.1:11434/v1/chat/completions", model_name="qwen2.5-coder:1.5b")
+config = any_llm_client.OpenAIConfig(
+    url="http://127.0.0.1:11434/v1/chat/completions", 
+    model_name="qwen2.5-coder:1.5b",
+    request_extra={"best_of": 3}
+)
 
 
 async def main() -> None:
@@ -127,7 +135,8 @@ class Settings(pydantic_settings.BaseSettings):
 os.environ["LLM_MODEL"] = """{
     "api_type": "openai",
     "url": "http://127.0.0.1:11434/v1/chat/completions",
-    "model_name": "qwen2.5-coder:1.5b"
+    "model_name": "qwen2.5-coder:1.5b",
+    "request_extra": {"best_of": 3}
 }"""
 settings = Settings()
 
@@ -146,6 +155,7 @@ config = any_llm_client.OpenAIConfig(
     url=pydantic.HttpUrl("https://api.openai.com/v1/chat/completions"),
     auth_token=os.environ["OPENAI_API_KEY"],
     model_name="gpt-4o-mini",
+    request_extra={"best_of": 3}
 )
 
 async with any_llm_client.OpenAIClient(config, ...) as client:
@@ -191,3 +201,5 @@ async with any_llm_client.get_client(..., request_retry=any_llm_client.RequestRe
 ```python
 await client.request_llm_message("Кек, чо как вообще на нарах?", extra={"best_of": 3})
 ```
+
+The `extra` parameter is united with `request_extra` in OpenAIConfig
