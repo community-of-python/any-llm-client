@@ -56,9 +56,9 @@ class LLMConfig(pydantic.BaseModel):
 
     def _resolve_request_temperature(self, temperature_arg_value: float) -> float:
         return (
-            temperature_arg_value
+            self.temperature
             if isinstance(temperature_arg_value, LLMConfigValue)  # type: ignore[arg-type]
-            else self.temperature
+            else temperature_arg_value
         )
 
 
