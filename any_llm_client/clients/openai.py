@@ -14,6 +14,7 @@ import typing_extensions
 from any_llm_client.core import (
     LLMClient,
     LLMConfig,
+    LLMConfigValue,
     LLMError,
     Message,
     MessageRole,
@@ -142,16 +143,27 @@ class OpenAIClient(LLMClient):
             else list(initial_messages)
         )
 
-    async def request_llm_message(
-        self, messages: str | list[Message], *, temperature: float = 0.2, extra: dict[str, typing.Any] | None = None
-    ) -> str:
-        payload: typing.Final = ChatCompletionsRequest(
-            stream=False,
+    def _prepare_payload(
+        self, *, messages: str | list[Message], temperature: float, stream: bool, extra: dict[str, typing.Any] | None
+    ) -> dict[str, typing.Any]:
+        return ChatCompletionsRequest(
+            stream=stream,
             model=self.config.model_name,
             messages=self._prepare_messages(messages),
-            temperature=temperature,
+            temperature=self.config._resolve_request_temperature(temperature),  # noqa: SLF001
             **self.config.request_extra | (extra or {}),
         ).model_dump(mode="json")
+
+    async def request_llm_message(
+        self,
+        messages: str | list[Message],
+        *,
+        temperature: float = LLMConfigValue,
+        extra: dict[str, typing.Any] | None = None,
+    ) -> str:
+        payload: typing.Final = self._prepare_payload(
+            messages=messages, temperature=temperature, stream=False, extra=extra
+        )
         try:
             response: typing.Final = await make_http_request(
                 httpx_client=self.httpx_client,
@@ -176,15 +188,15 @@ class OpenAIClient(LLMClient):
 
     @contextlib.asynccontextmanager
     async def stream_llm_message_chunks(
-        self, messages: str | list[Message], *, temperature: float = 0.2, extra: dict[str, typing.Any] | None = None
+        self,
+        messages: str | list[Message],
+        *,
+        temperature: float = LLMConfigValue,
+        extra: dict[str, typing.Any] | None = None,
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
-        payload: typing.Final = ChatCompletionsRequest(
-            stream=True,
-            model=self.config.model_name,
-            messages=self._prepare_messages(messages),
-            temperature=temperature,
-            **self.config.request_extra | (extra or {}),
-        ).model_dump(mode="json")
+        payload: typing.Final = self._prepare_payload(
+            messages=messages, temperature=temperature, stream=True, extra=extra
+        )
         try:
             async with make_streaming_http_request(
                 httpx_client=self.httpx_client,

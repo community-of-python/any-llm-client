@@ -6,7 +6,7 @@ import typing
 import pydantic
 import typing_extensions
 
-from any_llm_client.core import LLMClient, LLMConfig, Message
+from any_llm_client.core import LLMClient, LLMConfig, LLMConfigValue, Message
 
 
 class MockLLMConfig(LLMConfig):
@@ -23,7 +23,7 @@ class MockLLMClient(LLMClient):
         self,
         messages: str | list[Message],  # noqa: ARG002
         *,
-        temperature: float = 0.2,  # noqa: ARG002
+        temperature: float = LLMConfigValue,  # noqa: ARG002
         extra: dict[str, typing.Any] | None = None,  # noqa: ARG002
     ) -> str:
         return self.config.response_message
@@ -37,7 +37,7 @@ class MockLLMClient(LLMClient):
         self,
         messages: str | list[Message],  # noqa: ARG002
         *,
-        temperature: float = 0.2,  # noqa: ARG002
+        temperature: float = LLMConfigValue,  # noqa: ARG002
         extra: dict[str, typing.Any] | None = None,  # noqa: ARG002
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
         yield self._iter_config_stream_messages()
