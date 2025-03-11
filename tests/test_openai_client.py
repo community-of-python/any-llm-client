@@ -15,14 +15,15 @@ from any_llm_client.clients.openai import (
     OneStreamingChoice,
     OneStreamingChoiceDelta,
 )
-from tests.conftest import LLMFuncRequestFactory, consume_llm_message_chunks
+from tests.conftest import LLMFuncRequest, LLMFuncRequestFactory, consume_llm_message_chunks
 
 
 class OpenAIConfigFactory(ModelFactory[any_llm_client.OpenAIConfig]): ...
 
 
 class TestOpenAIRequestLLMResponse:
-    async def test_ok(self, faker: faker.Faker) -> None:
+    @pytest.mark.parametrize("func_request", LLMFuncRequestFactory.coverage())
+    async def test_ok(self, faker: faker.Faker, func_request: LLMFuncRequest) -> None:
         expected_result: typing.Final = faker.pystr()
         response: typing.Final = httpx.Response(
             200,
@@ -39,7 +40,7 @@ class TestOpenAIRequestLLMResponse:
 
         result: typing.Final = await any_llm_client.get_client(
             OpenAIConfigFactory.build(), transport=httpx.MockTransport(lambda _: response)
-        ).request_llm_message(**LLMFuncRequestFactory.build())
+        ).request_llm_message(**func_request)
 
         assert result == expected_result
 
@@ -57,7 +58,8 @@ class TestOpenAIRequestLLMResponse:
 
 
 class TestOpenAIRequestLLMMessageChunks:
-    async def test_ok(self, faker: faker.Faker) -> None:
+    @pytest.mark.parametrize("func_request", LLMFuncRequestFactory.coverage())
+    async def test_ok(self, faker: faker.Faker, func_request: LLMFuncRequest) -> None:
         generated_messages: typing.Final = [
             OneStreamingChoiceDelta(role=any_llm_client.MessageRole.assistant),
             OneStreamingChoiceDelta(content="H"),
@@ -78,7 +80,6 @@ class TestOpenAIRequestLLMMessageChunks:
             "r day?",
         ]
         config: typing.Final = OpenAIConfigFactory.build()
-        func_request: typing.Final = LLMFuncRequestFactory.build()
         response_content: typing.Final = (
             "\n\n".join(
                 "data: "

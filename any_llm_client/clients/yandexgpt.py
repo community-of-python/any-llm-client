@@ -10,7 +10,15 @@ import httpx
 import pydantic
 import typing_extensions
 
-from any_llm_client.core import LLMClient, LLMConfig, LLMError, Message, OutOfTokensOrSymbolsError, UserMessage
+from any_llm_client.core import (
+    LLMClient,
+    LLMConfig,
+    LLMConfigValue,
+    LLMError,
+    Message,
+    OutOfTokensOrSymbolsError,
+    UserMessage,
+)
 from any_llm_client.http import get_http_client_from_kwargs, make_http_request, make_streaming_http_request
 from any_llm_client.retry import RequestRetryConfig
 
@@ -38,7 +46,7 @@ class YandexGPTConfig(LLMConfig):
 
 class YandexGPTCompletionOptions(pydantic.BaseModel):
     stream: bool
-    temperature: float = 0.2
+    temperature: float
     max_tokens: int = pydantic.Field(gt=0, alias="maxTokens")
 
 
@@ -99,7 +107,7 @@ class YandexGPTClient(LLMClient):
         self,
         *,
         messages: str | list[Message],
-        temperature: float = 0.2,
+        temperature: float,
         stream: bool,
         extra: dict[str, typing.Any] | None,
     ) -> dict[str, typing.Any]:
@@ -107,14 +115,20 @@ class YandexGPTClient(LLMClient):
         return YandexGPTRequest(
             modelUri=f"gpt://{self.config.folder_id}/{self.config.model_name}/{self.config.model_version}",
             completionOptions=YandexGPTCompletionOptions(
-                stream=stream, temperature=temperature, maxTokens=self.config.max_tokens
+                stream=stream,
+                temperature=self.config._resolve_request_temperature(temperature),  # noqa: SLF001
+                maxTokens=self.config.max_tokens,
             ),
             messages=messages,
-            **extra or {},
+            **self.config.request_extra | (extra or {}),
         ).model_dump(mode="json", by_alias=True)
 
     async def request_llm_message(
-        self, messages: str | list[Message], *, temperature: float = 0.2, extra: dict[str, typing.Any] | None = None
+        self,
+        messages: str | list[Message],
+        *,
+        temperature: float = LLMConfigValue(attr="temperature"),
+        extra: dict[str, typing.Any] | None = None,
     ) -> str:
         payload: typing.Final = self._prepare_payload(
             messages=messages, temperature=temperature, stream=False, extra=extra
@@ -141,7 +155,11 @@ class YandexGPTClient(LLMClient):
 
     @contextlib.asynccontextmanager
     async def stream_llm_message_chunks(
-        self, messages: str | list[Message], *, temperature: float = 0.2, extra: dict[str, typing.Any] | None = None
+        self,
+        messages: str | list[Message],
+        *,
+        temperature: float = LLMConfigValue(attr="temperature"),
+        extra: dict[str, typing.Any] | None = None,
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
         payload: typing.Final = self._prepare_payload(
             messages=messages, temperature=temperature, stream=True, extra=extra

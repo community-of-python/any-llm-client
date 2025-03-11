@@ -1,25 +1,26 @@
 import typing
 
+import pytest
 from polyfactory.factories.pydantic_factory import ModelFactory
 
 import any_llm_client
-from tests.conftest import LLMFuncRequestFactory, consume_llm_message_chunks
+from tests.conftest import LLMFuncRequest, LLMFuncRequestFactory, consume_llm_message_chunks
 
 
 class MockLLMConfigFactory(ModelFactory[any_llm_client.MockLLMConfig]): ...
 
 
-async def test_mock_client_request_llm_message_returns_config_value() -> None:
+@pytest.mark.parametrize("func_request", LLMFuncRequestFactory.coverage())
+async def test_mock_client_request_llm_message_returns_config_value(func_request: LLMFuncRequest) -> None:
     config: typing.Final = MockLLMConfigFactory.build()
-    response: typing.Final = await any_llm_client.get_client(config).request_llm_message(
-        **LLMFuncRequestFactory.build()
-    )
+    response: typing.Final = await any_llm_client.get_client(config).request_llm_message(**func_request)
     assert response == config.response_message
 
 
-async def test_mock_client_stream_llm_message_chunks_returns_config_value() -> None:
+@pytest.mark.parametrize("func_request", LLMFuncRequestFactory.coverage())
+async def test_mock_client_stream_llm_message_chunks_returns_config_value(func_request: LLMFuncRequest) -> None:
     config: typing.Final = MockLLMConfigFactory.build()
     response: typing.Final = await consume_llm_message_chunks(
-        any_llm_client.get_client(config).stream_llm_message_chunks(**LLMFuncRequestFactory.build())
+        any_llm_client.get_client(config).stream_llm_message_chunks(**func_request)
     )
     assert response == config.stream_messages

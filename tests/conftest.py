@@ -3,6 +3,7 @@ import typing
 
 import pytest
 import stamina
+import typing_extensions
 from polyfactory.factories.typed_dict_factory import TypedDictFactory
 
 import any_llm_client
@@ -20,11 +21,29 @@ def _deactivate_retries() -> None:
 
 class LLMFuncRequest(typing.TypedDict):
     messages: str | list[any_llm_client.Message]
-    temperature: float
-    extra: dict[str, typing.Any] | None
+    temperature: typing_extensions.NotRequired[float]
+    extra: typing_extensions.NotRequired[dict[str, typing.Any] | None]
 
 
-class LLMFuncRequestFactory(TypedDictFactory[LLMFuncRequest]): ...
+class LLMFuncRequestFactory(TypedDictFactory[LLMFuncRequest]):
+    # Polyfactory ignores `NotRequired`:
+    # https://github.com/litestar-org/polyfactory/issues/656
+    @classmethod
+    def coverage(cls, **kwargs: typing.Any) -> typing.Iterator[LLMFuncRequest]:  # noqa: ANN401
+        yield from super().coverage(**kwargs)
+
+        first_additional_example: typing.Final = cls.build(**kwargs)
+        first_additional_example.pop("temperature")
+        yield first_additional_example
+
+        second_additional_example: typing.Final = cls.build(**kwargs)
+        second_additional_example.pop("extra")
+        yield second_additional_example
+
+        third_additional_example: typing.Final = cls.build(**kwargs)
+        third_additional_example.pop("extra")
+        third_additional_example.pop("temperature")
+        yield third_additional_example
 
 
 async def consume_llm_message_chunks(
