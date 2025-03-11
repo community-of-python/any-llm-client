@@ -51,7 +51,7 @@ class ChatCompletionsRequest(pydantic.BaseModel):
     stream: bool
     model: str
     messages: list[ChatCompletionsMessage]
-    temperature: float = 0.2
+    temperature: float
 
 
 class OneStreamingChoiceDelta(pydantic.BaseModel):

@@ -46,7 +46,7 @@ class YandexGPTConfig(LLMConfig):
 
 class YandexGPTCompletionOptions(pydantic.BaseModel):
     stream: bool
-    temperature: float = 0.2
+    temperature: float
     max_tokens: int = pydantic.Field(gt=0, alias="maxTokens")
 
 
