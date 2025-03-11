@@ -120,7 +120,7 @@ class YandexGPTClient(LLMClient):
                 maxTokens=self.config.max_tokens,
             ),
             messages=messages,
-            **extra or {},
+            **self.config.request_extra | (extra or {}),
         ).model_dump(mode="json", by_alias=True)
 
     async def request_llm_message(

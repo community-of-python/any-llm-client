@@ -52,6 +52,7 @@ class LLMConfig(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(protected_namespaces=())
     api_type: str
     temperature: float = 0.2
+    request_extra: dict[str, typing.Any] = pydantic.Field(default_factory=dict)
 
     def _resolve_request_temperature(self, temperature_arg_value: float) -> float:
         return (
