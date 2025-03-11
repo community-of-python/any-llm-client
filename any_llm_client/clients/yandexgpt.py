@@ -124,7 +124,11 @@ class YandexGPTClient(LLMClient):
         ).model_dump(mode="json", by_alias=True)
 
     async def request_llm_message(
-        self, messages: str | list[Message], *, temperature: float = LLMConfigValue, extra: dict[str, typing.Any] | None = None
+        self,
+        messages: str | list[Message],
+        *,
+        temperature: float = LLMConfigValue,
+        extra: dict[str, typing.Any] | None = None,
     ) -> str:
         payload: typing.Final = self._prepare_payload(
             messages=messages, temperature=temperature, stream=False, extra=extra
