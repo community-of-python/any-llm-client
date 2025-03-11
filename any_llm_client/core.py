@@ -51,17 +51,37 @@ else:
 class LLMConfig(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(protected_namespaces=())
     api_type: str
+    temperature: float = 0.2
+
+    def _resolve_request_temperature(self, temperature_arg_value: float) -> float:
+        return temperature_arg_value if isinstance(temperature_arg_value, LLMConfigValueType) else self.temperature
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class LLMConfigValueType: ...
+
+
+LLMConfigValue: typing.Any = LLMConfigValueType()
+"""Defaults to value from LLMConfig."""
 
 
 @dataclasses.dataclass(slots=True, init=False)
 class LLMClient(typing.Protocol):
     async def request_llm_message(
-        self, messages: str | list[Message], *, temperature: float = 0.2, extra: dict[str, typing.Any] | None = None
+        self,
+        messages: str | list[Message],
+        *,
+        temperature: float = LLMConfigValue,
+        extra: dict[str, typing.Any] | None = None,
     ) -> str: ...  # raises LLMError
 
     @contextlib.asynccontextmanager
     def stream_llm_message_chunks(
-        self, messages: str | list[Message], *, temperature: float = 0.2, extra: dict[str, typing.Any] | None = None
+        self,
+        messages: str | list[Message],
+        *,
+        temperature: float = LLMConfigValue,
+        extra: dict[str, typing.Any] | None = None,
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]: ...  # raises LLMError
 
     async def __aenter__(self) -> typing_extensions.Self: ...
