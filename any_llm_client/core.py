@@ -54,15 +54,24 @@ class LLMConfig(pydantic.BaseModel):
     temperature: float = 0.2
 
     def _resolve_request_temperature(self, temperature_arg_value: float) -> float:
-        return temperature_arg_value if isinstance(temperature_arg_value, LLMConfigValueType) else self.temperature
+        return (
+            temperature_arg_value
+            if isinstance(temperature_arg_value, LLMConfigValue)  # type: ignore[arg-type]
+            else self.temperature
+        )
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class LLMConfigValueType: ...
+if typing.TYPE_CHECKING:
 
+    def LLMConfigValue(*, attr: str) -> typing.Any:  # noqa: ANN401, N802
+        """Defaults to value from LLMConfig."""
+else:
 
-LLMConfigValue: typing.Any = LLMConfigValueType()
-"""Defaults to value from LLMConfig."""
+    @dataclasses.dataclass(kw_only=True, frozen=True, slots=True)
+    class LLMConfigValue:
+        """Defaults to value from LLMConfig."""
+
+        attr: str
 
 
 @dataclasses.dataclass(slots=True, init=False)
@@ -71,7 +80,7 @@ class LLMClient(typing.Protocol):
         self,
         messages: str | list[Message],
         *,
-        temperature: float = LLMConfigValue,
+        temperature: float = LLMConfigValue(attr="temperature"),
         extra: dict[str, typing.Any] | None = None,
     ) -> str: ...  # raises LLMError
 
@@ -80,7 +89,7 @@ class LLMClient(typing.Protocol):
         self,
         messages: str | list[Message],
         *,
-        temperature: float = LLMConfigValue,
+        temperature: float = LLMConfigValue(attr="temperature"),
         extra: dict[str, typing.Any] | None = None,
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]: ...  # raises LLMError
 

@@ -158,7 +158,7 @@ class OpenAIClient(LLMClient):
         self,
         messages: str | list[Message],
         *,
-        temperature: float = LLMConfigValue,
+        temperature: float = LLMConfigValue(attr="temperature"),
         extra: dict[str, typing.Any] | None = None,
     ) -> str:
         payload: typing.Final = self._prepare_payload(
@@ -191,7 +191,7 @@ class OpenAIClient(LLMClient):
         self,
         messages: str | list[Message],
         *,
-        temperature: float = LLMConfigValue,
+        temperature: float = LLMConfigValue(attr="temperature"),
         extra: dict[str, typing.Any] | None = None,
     ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
         payload: typing.Final = self._prepare_payload(
