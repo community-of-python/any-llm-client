@@ -23,6 +23,10 @@ class TextContentItem:
 @pydantic.dataclasses.dataclass
 class ImageContentItem:
     image_url: str
+    """
+    HTTP image url or data url in following format:
+    data:image/jpeg;base64,{base64.b64encode(jpeg_image_bytes).decode('utf-8')}
+    """
 
 
 AnyContentItem = TextContentItem | ImageContentItem
