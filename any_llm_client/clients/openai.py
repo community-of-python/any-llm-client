@@ -11,7 +11,6 @@ import httpx_sse
 import pydantic
 import typing_extensions
 
-import any_llm_client
 from any_llm_client.core import (
     LLMClient,
     LLMConfig,
@@ -20,6 +19,7 @@ from any_llm_client.core import (
     Message,
     MessageRole,
     OutOfTokensOrSymbolsError,
+    TextContentItem,
     UserMessage,
 )
 from any_llm_client.http import get_http_client_from_kwargs, make_http_request, make_streaming_http_request
@@ -99,12 +99,12 @@ class ChatCompletionsNotStreamingResponse(pydantic.BaseModel):
     choices: typing.Annotated[list[OneNotStreamingChoice], annotated_types.MinLen(1)]
 
 
-def _prepare_one_message(one_message: any_llm_client.Message) -> ChatCompletionsInputMessage:
+def _prepare_one_message(one_message: Message) -> ChatCompletionsInputMessage:
     if isinstance(one_message.content, str):
         return ChatCompletionsInputMessage(role=one_message.role, content=one_message.content)
     content_items: typing.Final = [
         ChatCompletionsTextContentItem(text=one_content_item.text)
-        if isinstance(one_content_item, any_llm_client.TextContentItem)
+        if isinstance(one_content_item, TextContentItem)
         else ChatCompletionsImageContentItem(image_url=one_content_item.image_url)
         for one_content_item in one_message.content
     ]
