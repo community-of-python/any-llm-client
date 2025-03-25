@@ -111,7 +111,9 @@ def _prepare_one_message(one_message: Message) -> ChatCompletionsInputMessage:
     return ChatCompletionsInputMessage(role=one_message.role, content=content_items)
 
 
-def _merge_content_chunks(content_chunks: list[str | ChatCompletionsContentItemList]) -> str | ChatCompletionsContentItemList:
+def _merge_content_chunks(
+    content_chunks: list[str | ChatCompletionsContentItemList],
+) -> str | ChatCompletionsContentItemList:
     if all(isinstance(one_content_chunk, str) for one_content_chunk in content_chunks):
         return "\n\n".join(typing.cast(list[str], content_chunks))
 
@@ -131,7 +133,7 @@ def _make_user_assistant_alternate_messages(
     current_message_content_chunks = []
 
     for one_message in messages:
-        if  isinstance(one_message.content, str) and not one_message.content.  strip():
+        if isinstance(one_message.content, str) and not one_message.content.strip():
             continue
 
         if (
