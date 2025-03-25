@@ -98,7 +98,7 @@ class LLMClient(typing.Protocol):
         *,
         temperature: float = LLMConfigValue(attr="temperature"),
         extra: dict[str, typing.Any] | None = None,
-    ) -> str: ...  # raises LLMError
+    ) -> str: ...  # raises LLMRequestValidationError, LLMError
 
     @contextlib.asynccontextmanager
     def stream_llm_message_chunks(
@@ -107,7 +107,7 @@ class LLMClient(typing.Protocol):
         *,
         temperature: float = LLMConfigValue(attr="temperature"),
         extra: dict[str, typing.Any] | None = None,
-    ) -> typing.AsyncIterator[typing.AsyncIterable[str]]: ...  # raises LLMError
+    ) -> typing.AsyncIterator[typing.AsyncIterable[str]]: ...  # raises LLMRequestValidationError, LLMError
 
     async def __aenter__(self) -> typing_extensions.Self: ...
     async def __aexit__(
