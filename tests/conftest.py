@@ -3,6 +3,7 @@ import typing
 from functools import reduce
 from itertools import combinations
 
+import pydantic
 import pytest
 import stamina
 import typing_extensions
@@ -22,8 +23,13 @@ def _deactivate_retries() -> None:
     stamina.set_active(False)
 
 
+@pydantic.dataclasses.dataclass(kw_only=True)
+class MessageWithTextContent(any_llm_client.Message):
+    content: str
+
+
 class LLMFuncRequest(typing.TypedDict):
-    messages: str | list[any_llm_client.Message]
+    messages: str | list[MessageWithTextContent]
     temperature: typing_extensions.NotRequired[float]
     extra: typing_extensions.NotRequired[dict[str, typing.Any] | None]
 
@@ -75,6 +81,7 @@ ADDITIONAL_OPTIONS = (
 
 
 class LLMFuncRequestFactory(TypedDictFactory[LLMFuncRequest]):
+    # Use build() to generate request with messages with str content, coverage for cases where it is not string as well.
     # Polyfactory ignores `NotRequired`:
     # https://github.com/litestar-org/polyfactory/issues/656
     @classmethod
