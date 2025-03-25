@@ -89,24 +89,23 @@ def message_content_one_image_item(llm_func_request: LLMFuncRequest) -> LLMFuncR
     return llm_func_request
 
 
-MUTATIONS = (no_temperature, no_extra)
-ADDITIONAL_OPTIONS = (
-    message_content_as_image_with_description,
-    message_content_one_text_item,
-    message_content_one_image_item,
-)
-
-
 class LLMFuncRequestFactory(TypedDictFactory[LLMFuncRequest]):
+    MUTATIONS = (no_temperature, no_extra)
+    ADDITIONAL_OPTIONS = (
+        message_content_as_image_with_description,
+        message_content_one_text_item,
+        message_content_one_image_item,
+    )
+
     # Polyfactory ignores `NotRequired`:
     # https://github.com/litestar-org/polyfactory/issues/656
     @classmethod
     def coverage(cls, **kwargs: typing.Any) -> typing.Iterator[LLMFuncRequest]:  # noqa: ANN401
         yield from super().coverage(**kwargs)
 
-        for one_combination in combinations(MUTATIONS, len(MUTATIONS)):
+        for one_combination in combinations(cls.MUTATIONS, len(cls.MUTATIONS)):
             yield reduce(lambda accumulation, func: func(accumulation), one_combination, cls.build(**kwargs))
-            for one_additional_option in ADDITIONAL_OPTIONS:
+            for one_additional_option in cls.ADDITIONAL_OPTIONS:
                 yield reduce(
                     lambda accumulation, func: func(accumulation),
                     (*one_combination, one_additional_option),
