@@ -41,17 +41,17 @@ class OpenAIConfig(LLMConfig):
     api_type: typing.Literal["openai"] = "openai"
 
 
-class ChatCompletionsTextContentItem(typing.TypedDict):
-    type: typing.Literal["text"]
+class ChatCompletionsTextContentItem(pydantic.BaseModel):
+    type: typing.Literal["text"] = "text"
     text: str
 
 
-class ChatCompletionsContentUrl(typing.TypedDict):
+class ChatCompletionsContentUrl(pydantic.BaseModel):
     url: str
 
 
-class ChatCompletionsImageContentItem(typing.TypedDict):
-    type: typing.Literal["image_url"]
+class ChatCompletionsImageContentItem(pydantic.BaseModel):
+    type: typing.Literal["image_url"] = "image_url"
     image_url: ChatCompletionsContentUrl
 
 
