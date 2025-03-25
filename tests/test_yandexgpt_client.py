@@ -10,7 +10,7 @@ from polyfactory.factories.pydantic_factory import ModelFactory
 
 import any_llm_client
 from any_llm_client.clients.yandexgpt import YandexGPTAlternative, YandexGPTMessage, YandexGPTResponse, YandexGPTResult
-from any_llm_client.core import ImageContentItem
+from any_llm_client.core import ImageContentItem, LLMRequestValidationError
 from tests.conftest import LLMFuncRequest, LLMFuncRequestFactory, consume_llm_message_chunks
 
 
@@ -75,7 +75,7 @@ class TestYandexGPTRequestLLMResponse:
             ).request_llm_message(**func_request)
 
         if func_request_has_image_content_or_list_of_not_one_items(func_request):
-            with pytest.raises(ValueError):
+            with pytest.raises(any_llm_client.LLMRequestValidationError):
                 await make_request()
         else:
             result: typing.Final = await make_request()
@@ -126,7 +126,7 @@ class TestYandexGPTRequestLLMMessageChunks:
             )
 
         if func_request_has_image_content_or_list_of_not_one_items(func_request):
-            with pytest.raises(ValueError):
+            with pytest.raises(any_llm_client.LLMRequestValidationError):
                 await make_request()
         else:
             assert await make_request() == expected_result
