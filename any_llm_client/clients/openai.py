@@ -11,6 +11,7 @@ import httpx_sse
 import pydantic
 import typing_extensions
 
+import any_llm_client
 from any_llm_client.core import (
     LLMClient,
     LLMConfig,
@@ -93,6 +94,18 @@ class ChatCompletionsNotStreamingResponse(pydantic.BaseModel):
     choices: typing.Annotated[list[OneNotStreamingChoice], annotated_types.MinLen(1)]
 
 
+def _prepare_one_message(one_message: any_llm_client.Message) -> ChatCompletionsMessage:
+    if isinstance(one_message.content, str):
+        return ChatCompletionsMessage(role=one_message.role, content=one_message.content)
+    content_items: typing.Final = [
+        ChatCompletionsTextContentItem(text=one_content_item.text)
+        if isinstance(one_content_item, any_llm_client.TextContentItem)
+        else ChatCompletionsImageContentItem(image_url=one_content_item.image_url)
+        for one_content_item in one_message.content
+    ]
+    return ChatCompletionsMessage(role=one_message.role, content=content_items)
+
+
 def _make_user_assistant_alternate_messages(
     messages: typing.Iterable[ChatCompletionsMessage],
 ) -> typing.Iterable[ChatCompletionsMessage]:
@@ -152,9 +165,7 @@ class OpenAIClient(LLMClient):
 
     def _prepare_messages(self, messages: str | list[Message]) -> list[ChatCompletionsMessage]:
         messages = [UserMessage(messages)] if isinstance(messages, str) else messages
-        initial_messages: typing.Final = (
-            ChatCompletionsMessage(role=one_message.role, content=one_message.content) for one_message in messages
-        )
+        initial_messages: typing.Final = (_prepare_one_message(one_message) for one_message in messages)
         return (
             list(_make_user_assistant_alternate_messages(initial_messages))
             if self.config.force_user_assistant_message_alternation
