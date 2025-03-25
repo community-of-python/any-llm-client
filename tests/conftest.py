@@ -70,7 +70,7 @@ class ImageContentItemFactory(DataclassFactory[any_llm_client.ImageContentItem])
 class TextContentItemFactory(DataclassFactory[any_llm_client.TextContentItem]): ...
 
 
-def message_content_as_image_with_description(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
+def set_message_content_as_image_with_description(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
     llm_func_request["messages"] = [
         MessageFactory.build(
             content=[TextContentItemFactory.build(), ImageContentItemFactory.build()],
@@ -79,12 +79,12 @@ def message_content_as_image_with_description(llm_func_request: LLMFuncRequest) 
     return llm_func_request
 
 
-def message_content_one_text_item(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
+def set_message_content_one_text_item(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
     llm_func_request["messages"] = [MessageFactory.build(content=[TextContentItemFactory.build()])]
     return llm_func_request
 
 
-def message_content_one_image_item(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
+def set_message_content_one_image_item(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
     llm_func_request["messages"] = [MessageFactory.build(content=[ImageContentItemFactory.build()])]
     return llm_func_request
 
@@ -92,9 +92,9 @@ def message_content_one_image_item(llm_func_request: LLMFuncRequest) -> LLMFuncR
 class LLMFuncRequestFactory(TypedDictFactory[LLMFuncRequest]):
     MUTATIONS = (no_temperature, no_extra)
     ADDITIONAL_OPTIONS = (
-        message_content_as_image_with_description,
-        message_content_one_text_item,
-        message_content_one_image_item,
+        set_message_content_as_image_with_description,
+        set_message_content_one_text_item,
+        set_message_content_one_image_item,
     )
 
     # Polyfactory ignores `NotRequired`:
