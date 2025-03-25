@@ -51,16 +51,6 @@ class LLMFuncRequest(typing.TypedDict):
     extra: typing_extensions.NotRequired[dict[str, typing.Any] | None]
 
 
-def no_temperature(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
-    llm_func_request.pop("temperature")
-    return llm_func_request
-
-
-def no_extra(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
-    llm_func_request.pop("extra")
-    return llm_func_request
-
-
 class MessageFactory(DataclassFactory[any_llm_client.Message]): ...
 
 
@@ -68,6 +58,17 @@ class ImageContentItemFactory(DataclassFactory[any_llm_client.ImageContentItem])
 
 
 class TextContentItemFactory(DataclassFactory[any_llm_client.TextContentItem]): ...
+
+
+def set_no_temperature(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
+    llm_func_request.pop("temperature")
+    return llm_func_request
+
+
+def set_no_extra(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
+    llm_func_request.pop("extra")
+    return llm_func_request
+
 
 
 def set_message_content_as_image_with_description(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
@@ -90,7 +91,7 @@ def set_message_content_one_image_item(llm_func_request: LLMFuncRequest) -> LLMF
 
 
 class LLMFuncRequestFactory(TypedDictFactory[LLMFuncRequest]):
-    MUTATIONS = (no_temperature, no_extra)
+    MUTATIONS = (set_no_temperature, set_no_extra)
     ADDITIONAL_OPTIONS = (
         set_message_content_as_image_with_description,
         set_message_content_one_text_item,
