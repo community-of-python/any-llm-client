@@ -11,6 +11,7 @@ from any_llm_client.clients.openai import (
     ChatCompletionsInputMessage,
     ChatCompletionsNotStreamingResponse,
     ChatCompletionsStreamingEvent,
+    ChatCompletionsTextContentItem,
     OneNotStreamingChoice,
     OneNotStreamingChoiceMessage,
     OneStreamingChoice,
@@ -233,6 +234,47 @@ class TestOpenAIMessageAlternation:
                     ),
                     ChatCompletionsInputMessage(role=any_llm_client.MessageRole.assistant, content="Well..."),
                     ChatCompletionsInputMessage(role=any_llm_client.MessageRole.user, content="Hmmm..."),
+                ],
+            ),
+            (
+                [
+                    any_llm_client.SystemMessage("Be nice"),
+                    any_llm_client.UserMessage(
+                        [
+                            any_llm_client.TextContentItem("Hi there"),
+                            any_llm_client.TextContentItem("Why is the sky blue?"),
+                        ]
+                    ),
+                ],
+                [
+                    ChatCompletionsInputMessage(
+                        role=any_llm_client.MessageRole.user,
+                        content=[
+                            ChatCompletionsTextContentItem(text="Be nice"),
+                            ChatCompletionsTextContentItem(text="Hi there"),
+                            ChatCompletionsTextContentItem(text="Why is the sky blue?"),
+                        ],
+                    )
+                ],
+            ),
+            (
+                [
+                    any_llm_client.UserMessage([any_llm_client.TextContentItem("Hi")]),
+                    any_llm_client.UserMessage([any_llm_client.TextContentItem("Hi there")]),
+                    any_llm_client.AssistantMessage([any_llm_client.TextContentItem("Hi")]),
+                ],
+                [
+                    ChatCompletionsInputMessage(
+                        role=any_llm_client.MessageRole.user,
+                        content=[
+                            ChatCompletionsTextContentItem(text="Hi"),
+                            ChatCompletionsTextContentItem(text="Hi there"),
+                        ],
+                    ),
+                    ChatCompletionsInputMessage(
+                        role=any_llm_client.MessageRole.assistant,
+                        content=[ChatCompletionsTextContentItem(text="Hi")],
+                    ),
                 ],
             ),
         ],
