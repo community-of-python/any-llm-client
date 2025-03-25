@@ -1,3 +1,5 @@
+"""Install ollama and pull the model to run this script: `ollama pull qwen2.5-coder:1.5b`."""
+
 import asyncio
 
 import any_llm_client

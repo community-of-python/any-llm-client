@@ -4,6 +4,7 @@ import enum
 import types
 import typing
 
+import annotated_types
 import pydantic
 import typing_extensions
 
@@ -14,10 +15,28 @@ class MessageRole(str, enum.Enum):
     assistant = "assistant"
 
 
+@pydantic.dataclasses.dataclass
+class TextContentItem:
+    text: str
+
+
+@pydantic.dataclasses.dataclass
+class ImageContentItem:
+    image_url: str
+    """
+    HTTP image url or data url in following format:
+    data:image/jpeg;base64,{base64.b64encode(jpeg_image_bytes).decode('utf-8')}
+    """
+
+
+AnyContentItem = TextContentItem | ImageContentItem
+ContentItemList = typing.Annotated[list[AnyContentItem], annotated_types.MinLen(1)]
+
+
 @pydantic.dataclasses.dataclass(kw_only=True)
 class Message:
     role: MessageRole
-    text: str
+    content: str | ContentItemList
 
 
 if typing.TYPE_CHECKING:
@@ -25,27 +44,27 @@ if typing.TYPE_CHECKING:
     @pydantic.dataclasses.dataclass
     class SystemMessage(Message):
         role: typing.Literal[MessageRole.system] = pydantic.Field(MessageRole.system, init=False)
-        text: str
+        content: str | ContentItemList
 
     @pydantic.dataclasses.dataclass
     class UserMessage(Message):
         role: typing.Literal[MessageRole.user] = pydantic.Field(MessageRole.user, init=False)
-        text: str
+        content: str | ContentItemList
 
     @pydantic.dataclasses.dataclass
     class AssistantMessage(Message):
         role: typing.Literal[MessageRole.assistant] = pydantic.Field(MessageRole.assistant, init=False)
-        text: str
+        content: str | ContentItemList
 else:
 
-    def SystemMessage(text: str) -> Message:  # noqa: N802
-        return Message(role=MessageRole.system, text=text)
+    def SystemMessage(content: str | ContentItemList) -> Message:  # noqa: N802
+        return Message(role=MessageRole.system, content=content)
 
-    def UserMessage(text: str) -> Message:  # noqa: N802
-        return Message(role=MessageRole.user, text=text)
+    def UserMessage(content: str | ContentItemList) -> Message:  # noqa: N802
+        return Message(role=MessageRole.user, content=content)
 
-    def AssistantMessage(text: str) -> Message:  # noqa: N802
-        return Message(role=MessageRole.assistant, text=text)
+    def AssistantMessage(content: str | ContentItemList) -> Message:  # noqa: N802
+        return Message(role=MessageRole.assistant, content=content)
 
 
 class LLMConfig(pydantic.BaseModel):
@@ -83,7 +102,7 @@ class LLMClient(typing.Protocol):
         *,
         temperature: float = LLMConfigValue(attr="temperature"),
         extra: dict[str, typing.Any] | None = None,
-    ) -> str: ...  # raises LLMError
+    ) -> str: ...  # raises LLMError, LLMRequestValidationError
 
     @contextlib.asynccontextmanager
     def stream_llm_message_chunks(
@@ -92,7 +111,7 @@ class LLMClient(typing.Protocol):
         *,
         temperature: float = LLMConfigValue(attr="temperature"),
         extra: dict[str, typing.Any] | None = None,
-    ) -> typing.AsyncIterator[typing.AsyncIterable[str]]: ...  # raises LLMError
+    ) -> typing.AsyncIterator[typing.AsyncIterable[str]]: ...  # raises LLMError, LLMRequestValidationError
 
     async def __aenter__(self) -> typing_extensions.Self: ...
     async def __aexit__(
@@ -104,12 +123,20 @@ class LLMClient(typing.Protocol):
 
 
 @dataclasses.dataclass
-class LLMError(Exception):
-    response_content: bytes
-
+class AnyLLMClientError(Exception):
     def __str__(self) -> str:
         return self.__repr__().removeprefix(self.__class__.__name__)
 
 
 @dataclasses.dataclass
+class LLMError(AnyLLMClientError):
+    response_content: bytes
+
+
+@dataclasses.dataclass
 class OutOfTokensOrSymbolsError(LLMError): ...
+
+
+@dataclasses.dataclass
+class LLMRequestValidationError(AnyLLMClientError):
+    message: str

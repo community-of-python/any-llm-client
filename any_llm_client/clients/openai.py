@@ -19,6 +19,7 @@ from any_llm_client.core import (
     Message,
     MessageRole,
     OutOfTokensOrSymbolsError,
+    TextContentItem,
     UserMessage,
 )
 from any_llm_client.http import get_http_client_from_kwargs, make_http_request, make_streaming_http_request
@@ -41,16 +42,34 @@ class OpenAIConfig(LLMConfig):
     api_type: typing.Literal["openai"] = "openai"
 
 
-class ChatCompletionsMessage(pydantic.BaseModel):
+class ChatCompletionsTextContentItem(pydantic.BaseModel):
+    type: typing.Literal["text"] = "text"
+    text: str
+
+
+class ChatCompletionsContentUrl(pydantic.BaseModel):
+    url: str
+
+
+class ChatCompletionsImageContentItem(pydantic.BaseModel):
+    type: typing.Literal["image_url"] = "image_url"
+    image_url: ChatCompletionsContentUrl
+
+
+ChatCompletionsAnyContentItem = ChatCompletionsImageContentItem | ChatCompletionsTextContentItem
+ChatCompletionsContentItemList = typing.Annotated[list[ChatCompletionsAnyContentItem], annotated_types.MinLen(1)]
+
+
+class ChatCompletionsInputMessage(pydantic.BaseModel):
     role: MessageRole
-    content: str
+    content: str | ChatCompletionsContentItemList
 
 
 class ChatCompletionsRequest(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="allow")
     stream: bool
     model: str
-    messages: list[ChatCompletionsMessage]
+    messages: list[ChatCompletionsInputMessage]
     temperature: float
 
 
@@ -67,22 +86,54 @@ class ChatCompletionsStreamingEvent(pydantic.BaseModel):
     choices: typing.Annotated[list[OneStreamingChoice], annotated_types.MinLen(1)]
 
 
+class OneNotStreamingChoiceMessage(pydantic.BaseModel):
+    role: MessageRole
+    content: str
+
+
 class OneNotStreamingChoice(pydantic.BaseModel):
-    message: ChatCompletionsMessage
+    message: OneNotStreamingChoiceMessage
 
 
 class ChatCompletionsNotStreamingResponse(pydantic.BaseModel):
     choices: typing.Annotated[list[OneNotStreamingChoice], annotated_types.MinLen(1)]
 
 
+def _prepare_one_message(one_message: Message) -> ChatCompletionsInputMessage:
+    if isinstance(one_message.content, str):
+        return ChatCompletionsInputMessage(role=one_message.role, content=one_message.content)
+    content_items: typing.Final = [
+        ChatCompletionsTextContentItem(text=one_content_item.text)
+        if isinstance(one_content_item, TextContentItem)
+        else ChatCompletionsImageContentItem(image_url=ChatCompletionsContentUrl(url=one_content_item.image_url))
+        for one_content_item in one_message.content
+    ]
+    return ChatCompletionsInputMessage(role=one_message.role, content=content_items)
+
+
+def _merge_content_chunks(
+    content_chunks: list[str | ChatCompletionsContentItemList],
+) -> str | ChatCompletionsContentItemList:
+    if all(isinstance(one_content_chunk, str) for one_content_chunk in content_chunks):
+        return "\n\n".join(typing.cast("list[str]", content_chunks))
+
+    new_content_items: ChatCompletionsContentItemList = []
+    for one_content_chunk in content_chunks:
+        if isinstance(one_content_chunk, str):
+            new_content_items.append(ChatCompletionsTextContentItem(text=one_content_chunk))
+        else:
+            new_content_items += one_content_chunk
+    return new_content_items
+
+
 def _make_user_assistant_alternate_messages(
-    messages: typing.Iterable[ChatCompletionsMessage],
-) -> typing.Iterable[ChatCompletionsMessage]:
+    messages: typing.Iterable[ChatCompletionsInputMessage],
+) -> typing.Iterable[ChatCompletionsInputMessage]:
     current_message_role = MessageRole.user
     current_message_content_chunks = []
 
     for one_message in messages:
-        if not one_message.content.strip():
+        if isinstance(one_message.content, str) and not one_message.content.strip():
             continue
 
         if (
@@ -91,14 +142,16 @@ def _make_user_assistant_alternate_messages(
             current_message_content_chunks.append(one_message.content)
         else:
             if current_message_content_chunks:
-                yield ChatCompletionsMessage(
-                    role=current_message_role, content="\n\n".join(current_message_content_chunks)
+                yield ChatCompletionsInputMessage(
+                    role=current_message_role, content=_merge_content_chunks(current_message_content_chunks)
                 )
             current_message_content_chunks = [one_message.content]
             current_message_role = one_message.role
 
     if current_message_content_chunks:
-        yield ChatCompletionsMessage(role=current_message_role, content="\n\n".join(current_message_content_chunks))
+        yield ChatCompletionsInputMessage(
+            role=current_message_role, content=_merge_content_chunks(current_message_content_chunks)
+        )
 
 
 def _handle_status_error(*, status_code: int, content: bytes) -> typing.NoReturn:
@@ -132,11 +185,9 @@ class OpenAIClient(LLMClient):
             headers={"Authorization": f"Bearer {self.config.auth_token}"} if self.config.auth_token else None,
         )
 
-    def _prepare_messages(self, messages: str | list[Message]) -> list[ChatCompletionsMessage]:
+    def _prepare_messages(self, messages: str | list[Message]) -> list[ChatCompletionsInputMessage]:
         messages = [UserMessage(messages)] if isinstance(messages, str) else messages
-        initial_messages: typing.Final = (
-            ChatCompletionsMessage(role=one_message.role, content=one_message.text) for one_message in messages
-        )
+        initial_messages: typing.Final = (_prepare_one_message(one_message) for one_message in messages)
         return (
             list(_make_user_assistant_alternate_messages(initial_messages))
             if self.config.force_user_assistant_message_alternation

@@ -24,7 +24,7 @@ import any_llm_client
 
 
 config = any_llm_client.OpenAIConfig(
-    url="http://127.0.0.1:11434/v1/chat/completions", 
+    url="http://127.0.0.1:11434/v1/chat/completions",
     model_name="qwen2.5-coder:1.5b",
     request_extra={"best_of": 3}
 )
@@ -57,7 +57,7 @@ import any_llm_client
 
 
 config = any_llm_client.OpenAIConfig(
-    url="http://127.0.0.1:11434/v1/chat/completions", 
+    url="http://127.0.0.1:11434/v1/chat/completions",
     model_name="qwen2.5-coder:1.5b",
     request_extra={"best_of": 3}
 )
@@ -164,7 +164,9 @@ async with any_llm_client.OpenAIClient(config, ...) as client:
 
 #### Errors
 
-`any_llm_client.LLMClient.request_llm_message()` and `any_llm_client.LLMClient.stream_llm_message_chunks()` will raise `any_llm_client.LLMError` or `any_llm_client.OutOfTokensOrSymbolsError` when the LLM API responds with a failed HTTP status.
+`any_llm_client.LLMClient.request_llm_message()` and `any_llm_client.LLMClient.stream_llm_message_chunks()` will raise:
+- `any_llm_client.LLMError` or `any_llm_client.OutOfTokensOrSymbolsError` when the LLM API responds with a failed HTTP status,
+- `any_llm_client.LLMRequestValidationError` when images are passed to YandexGPT client.
 
 #### Timeouts, proxy & other HTTP settings
 
@@ -203,3 +205,30 @@ await client.request_llm_message("Кек, чо как вообще на нара
 ```
 
 The `extra` parameter is united with `request_extra` in OpenAIConfig
+
+
+#### Passing images
+
+You can pass images to OpenAI client (YandexGPT doesn't support images yet):
+
+```python
+await client.request_llm_message(
+    messages=[
+        any_llm_client.TextContentItem("What's on the image?"),
+        any_llm_client.ImageContentItem("https://upload.wikimedia.org/wikipedia/commons/a/a9/Example.jpg"),
+    ]
+)
+```
+
+You can also pass a data url with base64-encoded image:
+
+```python
+await client.request_llm_message(
+    messages=[
+        any_llm_client.TextContentItem("What's on the image?"),
+        any_llm_client.ImageContentItem(
+            f"data:image/jpeg;base64,{base64.b64encode(image_content_bytes).decode('utf-8')}"
+        ),
+    ]
+)
+```

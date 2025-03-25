@@ -4,14 +4,54 @@ import faker
 import httpx
 import pydantic
 import pytest
+import typing_extensions
+from polyfactory.factories import TypedDictFactory
 from polyfactory.factories.pydantic_factory import ModelFactory
 
 import any_llm_client
-from any_llm_client.clients.yandexgpt import YandexGPTAlternative, YandexGPTResponse, YandexGPTResult
+from any_llm_client.clients.yandexgpt import YandexGPTAlternative, YandexGPTMessage, YandexGPTResponse, YandexGPTResult
 from tests.conftest import LLMFuncRequest, LLMFuncRequestFactory, consume_llm_message_chunks
 
 
+@pydantic.dataclasses.dataclass(kw_only=True)
+class MessageWithTextContent(any_llm_client.Message):
+    content: str
+
+
+if typing.TYPE_CHECKING:
+
+    class LLMFuncRequestWithTextContentMessages(typing.TypedDict):
+        messages: str | list[any_llm_client.Message]
+        temperature: typing_extensions.NotRequired[float]
+        extra: typing_extensions.NotRequired[dict[str, typing.Any] | None]
+else:
+
+    class LLMFuncRequestWithTextContentMessages(typing.TypedDict):
+        messages: str | list[MessageWithTextContent]
+        temperature: typing_extensions.NotRequired[float]
+        extra: typing_extensions.NotRequired[dict[str, typing.Any] | None]
+
+
+class LLMFuncRequestWithTextContentMessagesFactory(TypedDictFactory[LLMFuncRequestWithTextContentMessages]): ...
+
+
 class YandexGPTConfigFactory(ModelFactory[any_llm_client.YandexGPTConfig]): ...
+
+
+def func_request_has_image_content_or_list_of_not_one_items(func_request: LLMFuncRequest) -> bool:
+    return isinstance(func_request["messages"], list) and any(
+        (
+            isinstance(message.content, list)
+            and (
+                len(message.content) != 1
+                or any(
+                    isinstance(one_content_item, any_llm_client.ImageContentItem)
+                    for one_content_item in message.content
+                )
+            )
+        )
+        for message in func_request["messages"]
+    )
 
 
 class TestYandexGPTRequestLLMResponse:
@@ -22,16 +62,26 @@ class TestYandexGPTRequestLLMResponse:
             200,
             json=YandexGPTResponse(
                 result=YandexGPTResult(
-                    alternatives=[YandexGPTAlternative(message=any_llm_client.AssistantMessage(expected_result))]
+                    alternatives=[
+                        YandexGPTAlternative(
+                            message=YandexGPTMessage(role=any_llm_client.MessageRole.assistant, text=expected_result)
+                        )
+                    ]
                 )
             ).model_dump(mode="json"),
         )
 
-        result: typing.Final = await any_llm_client.get_client(
-            YandexGPTConfigFactory.build(), transport=httpx.MockTransport(lambda _: response)
-        ).request_llm_message(**func_request)
+        async def make_request() -> str:
+            return await any_llm_client.get_client(
+                YandexGPTConfigFactory.build(), transport=httpx.MockTransport(lambda _: response)
+            ).request_llm_message(**func_request)
 
-        assert result == expected_result
+        if func_request_has_image_content_or_list_of_not_one_items(func_request):
+            with pytest.raises(any_llm_client.LLMRequestValidationError):
+                await make_request()
+        else:
+            result: typing.Final = await make_request()
+            assert result == expected_result
 
     async def test_fails_without_alternatives(self) -> None:
         response: typing.Final = httpx.Response(
@@ -42,7 +92,7 @@ class TestYandexGPTRequestLLMResponse:
         )
 
         with pytest.raises(pydantic.ValidationError):
-            await client.request_llm_message(**LLMFuncRequestFactory.build())
+            await client.request_llm_message(**LLMFuncRequestWithTextContentMessagesFactory.build())
 
 
 class TestYandexGPTRequestLLMMessageChunks:
@@ -56,7 +106,10 @@ class TestYandexGPTRequestLLMMessageChunks:
                     result=YandexGPTResult(
                         alternatives=[
                             YandexGPTAlternative(
-                                message=any_llm_client.AssistantMessage("".join(expected_result[: one_index + 1]))
+                                message=YandexGPTMessage(
+                                    role=any_llm_client.MessageRole.assistant,
+                                    text="".join(expected_result[: one_index + 1]),
+                                )
                             )
                         ]
                     )
@@ -67,13 +120,18 @@ class TestYandexGPTRequestLLMMessageChunks:
         )
         response: typing.Final = httpx.Response(200, content=response_content)
 
-        result: typing.Final = await consume_llm_message_chunks(
-            any_llm_client.get_client(
-                config, transport=httpx.MockTransport(lambda _: response)
-            ).stream_llm_message_chunks(**func_request)
-        )
+        async def make_request() -> list[str]:
+            return await consume_llm_message_chunks(
+                any_llm_client.get_client(
+                    config, transport=httpx.MockTransport(lambda _: response)
+                ).stream_llm_message_chunks(**func_request)
+            )
 
-        assert result == expected_result
+        if func_request_has_image_content_or_list_of_not_one_items(func_request):
+            with pytest.raises(any_llm_client.LLMRequestValidationError):
+                await make_request()
+        else:
+            assert await make_request() == expected_result
 
     async def test_fails_without_alternatives(self) -> None:
         response_content: typing.Final = (
@@ -86,7 +144,9 @@ class TestYandexGPTRequestLLMMessageChunks:
         )
 
         with pytest.raises(pydantic.ValidationError):
-            await consume_llm_message_chunks(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
+            await consume_llm_message_chunks(
+                client.stream_llm_message_chunks(**LLMFuncRequestWithTextContentMessagesFactory.build())
+            )
 
 
 class TestYandexGPTLLMErrors:
@@ -98,9 +158,11 @@ class TestYandexGPTLLMErrors:
         )
 
         coroutine: typing.Final = (
-            consume_llm_message_chunks(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
+            consume_llm_message_chunks(
+                client.stream_llm_message_chunks(**LLMFuncRequestWithTextContentMessagesFactory.build())
+            )
             if stream
-            else client.request_llm_message(**LLMFuncRequestFactory.build())
+            else client.request_llm_message(**LLMFuncRequestWithTextContentMessagesFactory.build())
         )
 
         with pytest.raises(any_llm_client.LLMError) as exc_info:
@@ -122,9 +184,11 @@ class TestYandexGPTLLMErrors:
         )
 
         coroutine: typing.Final = (
-            consume_llm_message_chunks(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
+            consume_llm_message_chunks(
+                client.stream_llm_message_chunks(**LLMFuncRequestWithTextContentMessagesFactory.build())
+            )
             if stream
-            else client.request_llm_message(**LLMFuncRequestFactory.build())
+            else client.request_llm_message(**LLMFuncRequestWithTextContentMessagesFactory.build())
         )
 
         with pytest.raises(any_llm_client.OutOfTokensOrSymbolsError):

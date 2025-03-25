@@ -8,10 +8,12 @@ from polyfactory.factories.pydantic_factory import ModelFactory
 
 import any_llm_client
 from any_llm_client.clients.openai import (
-    ChatCompletionsMessage,
+    ChatCompletionsInputMessage,
     ChatCompletionsNotStreamingResponse,
     ChatCompletionsStreamingEvent,
+    ChatCompletionsTextContentItem,
     OneNotStreamingChoice,
+    OneNotStreamingChoiceMessage,
     OneStreamingChoice,
     OneStreamingChoiceDelta,
 )
@@ -30,7 +32,7 @@ class TestOpenAIRequestLLMResponse:
             json=ChatCompletionsNotStreamingResponse(
                 choices=[
                     OneNotStreamingChoice(
-                        message=ChatCompletionsMessage(
+                        message=OneNotStreamingChoiceMessage(
                             role=any_llm_client.MessageRole.assistant, content=expected_result
                         )
                     )
@@ -178,13 +180,13 @@ class TestOpenAIMessageAlternation:
             ),
             (
                 [any_llm_client.SystemMessage("Be nice")],
-                [ChatCompletionsMessage(role=any_llm_client.MessageRole.user, content="Be nice")],
+                [ChatCompletionsInputMessage(role=any_llm_client.MessageRole.user, content="Be nice")],
             ),
             (
                 [any_llm_client.UserMessage("Hi there"), any_llm_client.AssistantMessage("Hi! How can I help you?")],
                 [
-                    ChatCompletionsMessage(role=any_llm_client.MessageRole.user, content="Hi there"),
-                    ChatCompletionsMessage(
+                    ChatCompletionsInputMessage(role=any_llm_client.MessageRole.user, content="Hi there"),
+                    ChatCompletionsInputMessage(
                         role=any_llm_client.MessageRole.assistant, content="Hi! How can I help you?"
                     ),
                 ],
@@ -196,15 +198,15 @@ class TestOpenAIMessageAlternation:
                     any_llm_client.AssistantMessage("Hi! How can I help you?"),
                 ],
                 [
-                    ChatCompletionsMessage(role=any_llm_client.MessageRole.user, content="Hi there"),
-                    ChatCompletionsMessage(
+                    ChatCompletionsInputMessage(role=any_llm_client.MessageRole.user, content="Hi there"),
+                    ChatCompletionsInputMessage(
                         role=any_llm_client.MessageRole.assistant, content="Hi! How can I help you?"
                     ),
                 ],
             ),
             (
                 [any_llm_client.SystemMessage("Be nice"), any_llm_client.UserMessage("Hi there")],
-                [ChatCompletionsMessage(role=any_llm_client.MessageRole.user, content="Be nice\n\nHi there")],
+                [ChatCompletionsInputMessage(role=any_llm_client.MessageRole.user, content="Be nice\n\nHi there")],
             ),
             (
                 [
@@ -222,22 +224,63 @@ class TestOpenAIMessageAlternation:
                     any_llm_client.UserMessage("Hmmm..."),
                 ],
                 [
-                    ChatCompletionsMessage(role=any_llm_client.MessageRole.user, content="Be nice"),
-                    ChatCompletionsMessage(
+                    ChatCompletionsInputMessage(role=any_llm_client.MessageRole.user, content="Be nice"),
+                    ChatCompletionsInputMessage(
                         role=any_llm_client.MessageRole.assistant,
                         content="Hi!\n\nI'm your answer to everything.\n\nHow can I help you?",
                     ),
-                    ChatCompletionsMessage(
+                    ChatCompletionsInputMessage(
                         role=any_llm_client.MessageRole.user, content="Hi there\n\nWhy is the sky blue?"
                     ),
-                    ChatCompletionsMessage(role=any_llm_client.MessageRole.assistant, content="Well..."),
-                    ChatCompletionsMessage(role=any_llm_client.MessageRole.user, content="Hmmm..."),
+                    ChatCompletionsInputMessage(role=any_llm_client.MessageRole.assistant, content="Well..."),
+                    ChatCompletionsInputMessage(role=any_llm_client.MessageRole.user, content="Hmmm..."),
+                ],
+            ),
+            (
+                [
+                    any_llm_client.SystemMessage("Be nice"),
+                    any_llm_client.UserMessage(
+                        [
+                            any_llm_client.TextContentItem("Hi there"),
+                            any_llm_client.TextContentItem("Why is the sky blue?"),
+                        ]
+                    ),
+                ],
+                [
+                    ChatCompletionsInputMessage(
+                        role=any_llm_client.MessageRole.user,
+                        content=[
+                            ChatCompletionsTextContentItem(text="Be nice"),
+                            ChatCompletionsTextContentItem(text="Hi there"),
+                            ChatCompletionsTextContentItem(text="Why is the sky blue?"),
+                        ],
+                    )
+                ],
+            ),
+            (
+                [
+                    any_llm_client.UserMessage([any_llm_client.TextContentItem("Hi")]),
+                    any_llm_client.UserMessage([any_llm_client.TextContentItem("Hi there")]),
+                    any_llm_client.AssistantMessage([any_llm_client.TextContentItem("Hi")]),
+                ],
+                [
+                    ChatCompletionsInputMessage(
+                        role=any_llm_client.MessageRole.user,
+                        content=[
+                            ChatCompletionsTextContentItem(text="Hi"),
+                            ChatCompletionsTextContentItem(text="Hi there"),
+                        ],
+                    ),
+                    ChatCompletionsInputMessage(
+                        role=any_llm_client.MessageRole.assistant,
+                        content=[ChatCompletionsTextContentItem(text="Hi")],
+                    ),
                 ],
             ),
         ],
     )
     def test_with_alternation(
-        self, messages: list[any_llm_client.Message], expected_result: list[ChatCompletionsMessage]
+        self, messages: list[any_llm_client.Message], expected_result: list[ChatCompletionsInputMessage]
     ) -> None:
         client: typing.Final = any_llm_client.OpenAIClient(
             OpenAIConfigFactory.build(force_user_assistant_message_alternation=True)
@@ -251,6 +294,6 @@ class TestOpenAIMessageAlternation:
         assert client._prepare_messages(  # noqa: SLF001
             [any_llm_client.SystemMessage("Be nice"), any_llm_client.UserMessage("Hi there")]
         ) == [
-            ChatCompletionsMessage(role=any_llm_client.MessageRole.system, content="Be nice"),
-            ChatCompletionsMessage(role=any_llm_client.MessageRole.user, content="Hi there"),
+            ChatCompletionsInputMessage(role=any_llm_client.MessageRole.system, content="Be nice"),
+            ChatCompletionsInputMessage(role=any_llm_client.MessageRole.user, content="Hi there"),
         ]

@@ -11,13 +11,15 @@ import pydantic
 import typing_extensions
 
 from any_llm_client.core import (
+    ImageContentItem,
     LLMClient,
     LLMConfig,
     LLMConfigValue,
     LLMError,
+    LLMRequestValidationError,
     Message,
+    MessageRole,
     OutOfTokensOrSymbolsError,
-    UserMessage,
 )
 from any_llm_client.http import get_http_client_from_kwargs, make_http_request, make_streaming_http_request
 from any_llm_client.retry import RequestRetryConfig
@@ -50,15 +52,20 @@ class YandexGPTCompletionOptions(pydantic.BaseModel):
     max_tokens: int = pydantic.Field(gt=0, alias="maxTokens")
 
 
+class YandexGPTMessage(pydantic.BaseModel):
+    role: MessageRole
+    text: str
+
+
 class YandexGPTRequest(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(protected_namespaces=(), extra="allow")
     model_uri: str = pydantic.Field(alias="modelUri")
     completion_options: YandexGPTCompletionOptions = pydantic.Field(alias="completionOptions")
-    messages: list[Message]
+    messages: list[YandexGPTMessage]
 
 
 class YandexGPTAlternative(pydantic.BaseModel):
-    message: Message
+    message: YandexGPTMessage
 
 
 class YandexGPTResult(pydantic.BaseModel):
@@ -111,7 +118,24 @@ class YandexGPTClient(LLMClient):
         stream: bool,
         extra: dict[str, typing.Any] | None,
     ) -> dict[str, typing.Any]:
-        messages = [UserMessage(messages)] if isinstance(messages, str) else messages
+        if isinstance(messages, str):
+            prepared_messages = [YandexGPTMessage(role=MessageRole.user, text=messages)]
+        else:
+            prepared_messages = []
+            for one_message in messages:
+                if isinstance(one_message.content, list):
+                    if len(one_message.content) != 1:
+                        raise LLMRequestValidationError(
+                            "YandexGPTClient does not support multiple content items per message"
+                        )
+                    message_content = one_message.content[0]
+                    if isinstance(message_content, ImageContentItem):
+                        raise LLMRequestValidationError("YandexGPTClient does not support image content items")
+                    message_text = message_content.text
+                else:
+                    message_text = one_message.content
+                prepared_messages.append(YandexGPTMessage(role=one_message.role, text=message_text))
+
         return YandexGPTRequest(
             modelUri=f"gpt://{self.config.folder_id}/{self.config.model_name}/{self.config.model_version}",
             completionOptions=YandexGPTCompletionOptions(
@@ -119,7 +143,7 @@ class YandexGPTClient(LLMClient):
                 temperature=self.config._resolve_request_temperature(temperature),  # noqa: SLF001
                 maxTokens=self.config.max_tokens,
             ),
-            messages=messages,
+            messages=prepared_messages,
             **self.config.request_extra | (extra or {}),
         ).model_dump(mode="json", by_alias=True)
 
