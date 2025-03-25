@@ -49,9 +49,7 @@ def set_no_extra(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
 
 def set_message_content_as_image_with_description(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
     llm_func_request["messages"] = [
-        MessageFactory.build(
-            content=[TextContentItemFactory.build(), ImageContentItemFactory.build()],
-        )
+        MessageFactory.build(content=[TextContentItemFactory.build(), ImageContentItemFactory.build()])
     ]
     return llm_func_request
 
@@ -67,8 +65,8 @@ def set_message_content_one_image_item(llm_func_request: LLMFuncRequest) -> LLMF
 
 
 class LLMFuncRequestFactory(TypedDictFactory[LLMFuncRequest]):
-    MUTATIONS = (set_no_temperature, set_no_extra)
-    ADDITIONAL_OPTIONS = (
+    MUTATIONS: typing.Final = (set_no_temperature, set_no_extra)
+    ADDITIONAL_VARIANTS: typing.Final = (
         set_message_content_as_image_with_description,
         set_message_content_one_text_item,
         set_message_content_one_image_item,
@@ -82,7 +80,7 @@ class LLMFuncRequestFactory(TypedDictFactory[LLMFuncRequest]):
 
         for one_combination in combinations(cls.MUTATIONS, len(cls.MUTATIONS)):
             yield reduce(lambda accumulation, func: func(accumulation), one_combination, cls.build(**kwargs))
-            for one_additional_option in cls.ADDITIONAL_OPTIONS:
+            for one_additional_option in cls.ADDITIONAL_VARIANTS:
                 yield reduce(
                     lambda accumulation, func: func(accumulation),
                     (*one_combination, one_additional_option),
