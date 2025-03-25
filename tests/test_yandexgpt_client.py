@@ -94,13 +94,18 @@ class TestYandexGPTRequestLLMMessageChunks:
         )
         response: typing.Final = httpx.Response(200, content=response_content)
 
-        result: typing.Final = await consume_llm_message_chunks(
-            any_llm_client.get_client(
-                config, transport=httpx.MockTransport(lambda _: response)
-            ).stream_llm_message_chunks(**func_request)
-        )
+        async def make_request() -> list[str]:
+            return await consume_llm_message_chunks(
+                any_llm_client.get_client(
+                    config, transport=httpx.MockTransport(lambda _: response)
+                ).stream_llm_message_chunks(**func_request)
+            )
 
-        assert result == expected_result
+        if func_request_has_image_content_or_list_of_not_one_items(func_request):
+            with pytest.raises(ValueError):
+                await make_request()
+        else:
+            assert await make_request() == expected_result
 
     async def test_fails_without_alternatives(self) -> None:
         response_content: typing.Final = (

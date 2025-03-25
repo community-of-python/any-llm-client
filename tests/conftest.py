@@ -44,10 +44,12 @@ class ImageContentItemFactory(DataclassFactory[any_llm_client.ImageContentItem])
 class TextContentItemFactory(DataclassFactory[any_llm_client.TextContentItem]): ...
 
 
+class MessageFactory(DataclassFactory[any_llm_client.Message]): ...
+
+
 def message_content_as_image_with_description(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
     llm_func_request["messages"] = [
-        any_llm_client.Message(
-            role=any_llm_client.MessageRole.user,
+        MessageFactory.build(
             content=[TextContentItemFactory.build(), ImageContentItemFactory.build()],
         )
     ]
@@ -55,16 +57,12 @@ def message_content_as_image_with_description(llm_func_request: LLMFuncRequest) 
 
 
 def message_content_one_text_item(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
-    llm_func_request["messages"] = [
-        any_llm_client.Message(role=any_llm_client.MessageRole.user, content=[TextContentItemFactory.build()])
-    ]
+    llm_func_request["messages"] = [MessageFactory.build(content=[TextContentItemFactory.build()])]
     return llm_func_request
 
 
 def message_content_one_image_item(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
-    llm_func_request["messages"] = [
-        any_llm_client.Message(role=any_llm_client.MessageRole.user, content=[ImageContentItemFactory.build()])
-    ]
+    llm_func_request["messages"] = [MessageFactory.build(content=[ImageContentItemFactory.build()])]
     return llm_func_request
 
 
