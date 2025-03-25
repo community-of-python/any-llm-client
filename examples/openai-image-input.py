@@ -22,8 +22,12 @@ message: typing.Final = any_llm_client.UserMessage(
 
 
 async def main() -> None:
-    async with any_llm_client.get_client(config) as client:
-        print(await client.request_llm_message(messages=[message]))
+    async with (
+        any_llm_client.get_client(config) as client,
+        client.stream_llm_message_chunks(messages=[message]) as message_chunks,
+    ):
+        async for chunk in message_chunks:
+            print(chunk, end="", flush=True)
 
 
 asyncio.run(main())
