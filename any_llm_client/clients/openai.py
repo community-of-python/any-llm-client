@@ -131,6 +131,9 @@ def _make_user_assistant_alternate_messages(
     current_message_content_chunks = []
 
     for one_message in messages:
+        if  isinstance(one_message.content, str) and not one_message.content.  strip():
+            continue
+
         if (
             one_message.role in {MessageRole.system, MessageRole.user} and current_message_role == MessageRole.user
         ) or one_message.role == current_message_role == MessageRole.assistant:
