@@ -55,9 +55,13 @@ class ChatCompletionsImageContentItem(pydantic.BaseModel):
     image_url: ChatCompletionsContentUrl
 
 
+ChatCompletionsAnyContentItem = ChatCompletionsImageContentItem | ChatCompletionsTextContentItem
+ChatCompletionsContentItems = typing.Annotated[list[ChatCompletionsAnyContentItem], annotated_types.MinLen(1)]
+
+
 class ChatCompletionsMessage(pydantic.BaseModel):
     role: MessageRole
-    content: str | list[ChatCompletionsImageContentItem | ChatCompletionsTextContentItem]
+    content: str | ChatCompletionsContentItems
 
 
 class ChatCompletionsRequest(pydantic.BaseModel):
