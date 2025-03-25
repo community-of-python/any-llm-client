@@ -3,7 +3,6 @@ import typing
 from functools import reduce
 from itertools import combinations
 
-import pydantic
 import pytest
 import stamina
 import typing_extensions
@@ -21,28 +20,6 @@ def anyio_backend() -> str:
 @pytest.fixture(scope="session", autouse=True)
 def _deactivate_retries() -> None:
     stamina.set_active(False)
-
-
-@pydantic.dataclasses.dataclass(kw_only=True)
-class MessageWithTextContent(any_llm_client.Message):
-    content: str
-
-
-if typing.TYPE_CHECKING:
-
-    class LLMFuncRequestWithTextContentMessages(typing.TypedDict):
-        messages: str | list[any_llm_client.Message]
-        temperature: typing_extensions.NotRequired[float]
-        extra: typing_extensions.NotRequired[dict[str, typing.Any] | None]
-else:
-
-    class LLMFuncRequestWithTextContentMessages(typing.TypedDict):
-        messages: str | list[MessageWithTextContent]
-        temperature: typing_extensions.NotRequired[float]
-        extra: typing_extensions.NotRequired[dict[str, typing.Any] | None]
-
-
-class LLMFuncRequestWithTextContentMessagesFactory(TypedDictFactory[LLMFuncRequestWithTextContentMessages]): ...
 
 
 class LLMFuncRequest(typing.TypedDict):
@@ -68,7 +45,6 @@ def set_no_temperature(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
 def set_no_extra(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
     llm_func_request.pop("extra")
     return llm_func_request
-
 
 
 def set_message_content_as_image_with_description(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:

@@ -4,17 +4,36 @@ import faker
 import httpx
 import pydantic
 import pytest
+import typing_extensions
+from polyfactory.factories import TypedDictFactory
 from polyfactory.factories.pydantic_factory import ModelFactory
 
 import any_llm_client
 from any_llm_client.clients.yandexgpt import YandexGPTAlternative, YandexGPTMessage, YandexGPTResponse, YandexGPTResult
 from any_llm_client.core import ImageContentItem
-from tests.conftest import (
-    LLMFuncRequest,
-    LLMFuncRequestFactory,
-    LLMFuncRequestWithTextContentMessagesFactory,
-    consume_llm_message_chunks,
-)
+from tests.conftest import LLMFuncRequest, LLMFuncRequestFactory, consume_llm_message_chunks
+
+
+@pydantic.dataclasses.dataclass(kw_only=True)
+class MessageWithTextContent(any_llm_client.Message):
+    content: str
+
+
+if typing.TYPE_CHECKING:
+
+    class LLMFuncRequestWithTextContentMessages(typing.TypedDict):
+        messages: str | list[any_llm_client.Message]
+        temperature: typing_extensions.NotRequired[float]
+        extra: typing_extensions.NotRequired[dict[str, typing.Any] | None]
+else:
+
+    class LLMFuncRequestWithTextContentMessages(typing.TypedDict):
+        messages: str | list[MessageWithTextContent]
+        temperature: typing_extensions.NotRequired[float]
+        extra: typing_extensions.NotRequired[dict[str, typing.Any] | None]
+
+
+class LLMFuncRequestWithTextContentMessagesFactory(TypedDictFactory[LLMFuncRequestWithTextContentMessages]): ...
 
 
 class YandexGPTConfigFactory(ModelFactory[any_llm_client.YandexGPTConfig]): ...
