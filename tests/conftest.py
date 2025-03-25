@@ -28,8 +28,25 @@ class MessageWithTextContent(any_llm_client.Message):
     content: str
 
 
+if typing.TYPE_CHECKING:
+
+    class LLMFuncRequestWithTextContentMessages(typing.TypedDict):
+        messages: str | list[any_llm_client.Message]
+        temperature: typing_extensions.NotRequired[float]
+        extra: typing_extensions.NotRequired[dict[str, typing.Any] | None]
+else:
+
+    class LLMFuncRequestWithTextContentMessages(typing.TypedDict):
+        messages: str | list[MessageWithTextContent]
+        temperature: typing_extensions.NotRequired[float]
+        extra: typing_extensions.NotRequired[dict[str, typing.Any] | None]
+
+
+class LLMFuncRequestWithTextContentMessagesFactory(TypedDictFactory[LLMFuncRequestWithTextContentMessages]): ...
+
+
 class LLMFuncRequest(typing.TypedDict):
-    messages: str | list[MessageWithTextContent]
+    messages: str | list[any_llm_client.Message]
     temperature: typing_extensions.NotRequired[float]
     extra: typing_extensions.NotRequired[dict[str, typing.Any] | None]
 
@@ -81,7 +98,6 @@ ADDITIONAL_OPTIONS = (
 
 
 class LLMFuncRequestFactory(TypedDictFactory[LLMFuncRequest]):
-    # Use build() to generate request with messages with str content, coverage for cases where it is not string as well.
     # Polyfactory ignores `NotRequired`:
     # https://github.com/litestar-org/polyfactory/issues/656
     @classmethod

@@ -9,7 +9,12 @@ from polyfactory.factories.pydantic_factory import ModelFactory
 import any_llm_client
 from any_llm_client.clients.yandexgpt import YandexGPTAlternative, YandexGPTMessage, YandexGPTResponse, YandexGPTResult
 from any_llm_client.core import ImageContentItem
-from tests.conftest import LLMFuncRequest, LLMFuncRequestFactory, consume_llm_message_chunks
+from tests.conftest import (
+    LLMFuncRequest,
+    LLMFuncRequestFactory,
+    LLMFuncRequestWithTextContentMessagesFactory,
+    consume_llm_message_chunks,
+)
 
 
 class YandexGPTConfigFactory(ModelFactory[any_llm_client.YandexGPTConfig]): ...
@@ -66,7 +71,7 @@ class TestYandexGPTRequestLLMResponse:
         )
 
         with pytest.raises(pydantic.ValidationError):
-            await client.request_llm_message(**LLMFuncRequestFactory.build())
+            await client.request_llm_message(**LLMFuncRequestWithTextContentMessagesFactory.build())
 
 
 class TestYandexGPTRequestLLMMessageChunks:
@@ -118,7 +123,9 @@ class TestYandexGPTRequestLLMMessageChunks:
         )
 
         with pytest.raises(pydantic.ValidationError):
-            await consume_llm_message_chunks(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
+            await consume_llm_message_chunks(
+                client.stream_llm_message_chunks(**LLMFuncRequestWithTextContentMessagesFactory.build())
+            )
 
 
 class TestYandexGPTLLMErrors:
@@ -130,9 +137,11 @@ class TestYandexGPTLLMErrors:
         )
 
         coroutine: typing.Final = (
-            consume_llm_message_chunks(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
+            consume_llm_message_chunks(
+                client.stream_llm_message_chunks(**LLMFuncRequestWithTextContentMessagesFactory.build())
+            )
             if stream
-            else client.request_llm_message(**LLMFuncRequestFactory.build())
+            else client.request_llm_message(**LLMFuncRequestWithTextContentMessagesFactory.build())
         )
 
         with pytest.raises(any_llm_client.LLMError) as exc_info:
@@ -154,9 +163,11 @@ class TestYandexGPTLLMErrors:
         )
 
         coroutine: typing.Final = (
-            consume_llm_message_chunks(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
+            consume_llm_message_chunks(
+                client.stream_llm_message_chunks(**LLMFuncRequestWithTextContentMessagesFactory.build())
+            )
             if stream
-            else client.request_llm_message(**LLMFuncRequestFactory.build())
+            else client.request_llm_message(**LLMFuncRequestWithTextContentMessagesFactory.build())
         )
 
         with pytest.raises(any_llm_client.OutOfTokensOrSymbolsError):
