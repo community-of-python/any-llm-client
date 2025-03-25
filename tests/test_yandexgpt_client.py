@@ -31,11 +31,19 @@ class TestYandexGPTRequestLLMResponse:
             ).model_dump(mode="json"),
         )
 
-        result: typing.Final = await any_llm_client.get_client(
-            YandexGPTConfigFactory.build(), transport=httpx.MockTransport(lambda _: response)
-        ).request_llm_message(**func_request)
+        async def make_request() -> str:
+            return await any_llm_client.get_client(
+                YandexGPTConfigFactory.build(), transport=httpx.MockTransport(lambda _: response)
+            ).request_llm_message(**func_request)
 
-        assert result == expected_result
+        if isinstance(func_request["messages"], list) and any(
+            isinstance(message.content, list) for message in func_request["messages"]
+        ):
+            with pytest.raises(ValueError):
+                await make_request()
+        else:
+            result: typing.Final = await make_request()
+            assert result == expected_result
 
     async def test_fails_without_alternatives(self) -> None:
         response: typing.Final = httpx.Response(
