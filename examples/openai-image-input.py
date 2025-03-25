@@ -10,7 +10,7 @@ import any_llm_client
 
 config = any_llm_client.OpenAIConfig(url="http://127.0.0.1:11434/v1/chat/completions", model_name="llava")
 
-with pathlib.Path(__file__).parent.joinpath("IMG_4627.JPG").open("rb") as f:
+with pathlib.Path(__file__).parent.joinpath("example-wikimedia-image.jpg").open("rb") as f:
     image_content: typing.Final = f.read()
 
 message: typing.Final = any_llm_client.UserMessage(
