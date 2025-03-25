@@ -38,13 +38,13 @@ def no_extra(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
     return llm_func_request
 
 
+class MessageFactory(DataclassFactory[any_llm_client.Message]): ...
+
+
 class ImageContentItemFactory(DataclassFactory[any_llm_client.ImageContentItem]): ...
 
 
 class TextContentItemFactory(DataclassFactory[any_llm_client.TextContentItem]): ...
-
-
-class MessageFactory(DataclassFactory[any_llm_client.Message]): ...
 
 
 def message_content_as_image_with_description(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
