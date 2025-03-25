@@ -115,7 +115,7 @@ def _merge_content_chunks(
     content_chunks: list[str | ChatCompletionsContentItemList],
 ) -> str | ChatCompletionsContentItemList:
     if all(isinstance(one_content_chunk, str) for one_content_chunk in content_chunks):
-        return "\n\n".join(typing.cast(list[str], content_chunks))
+        return "\n\n".join(typing.cast("list[str]", content_chunks))
 
     new_content_items: ChatCompletionsContentItemList = []
     for one_content_chunk in content_chunks:

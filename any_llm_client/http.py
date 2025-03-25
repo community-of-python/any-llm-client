@@ -1,4 +1,4 @@
-import contextlib  # noqa: A005
+import contextlib
 import dataclasses
 import typing
 

@@ -33,7 +33,7 @@ def test_llm_error_str(faker: faker.Faker) -> None:
 @pytest.mark.parametrize("model_type", [YandexGPTRequest, ChatCompletionsRequest])
 def test_dumped_llm_request_payload_dump_has_extra_data(model_type: type[pydantic.BaseModel]) -> None:
     extra: typing.Final = {"hi": "there", "hi-hi": "there-there"}
-    generated_data: typing.Final = ModelFactory.create_factory(model_type).build(**extra).model_dump(by_alias=True)  # type: ignore[arg-type]
+    generated_data: typing.Final = ModelFactory.create_factory(model_type).build(**extra).model_dump(by_alias=True)
     dumped_model: typing.Final = model_type(**{**generated_data, **extra}).model_dump(mode="json", by_alias=True)
 
     assert dumped_model["hi"] == "there"
