@@ -4,7 +4,7 @@ from any_llm_client.clients.yandexgpt import YandexGPTClient, YandexGPTConfig
 from any_llm_client.core import (
     AnyContentItem,
     AssistantMessage,
-    ContentItems,
+    ContentItemList,
     ImageContentItem,
     LLMClient,
     LLMConfig,
@@ -25,7 +25,7 @@ __all__ = [
     "AnyContentItem",
     "AnyLLMConfig",
     "AssistantMessage",
-    "ContentItems",
+    "ContentItemList",
     "ImageContentItem",
     "LLMClient",
     "LLMConfig",

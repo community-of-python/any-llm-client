@@ -57,12 +57,12 @@ class ChatCompletionsImageContentItem(pydantic.BaseModel):
 
 
 ChatCompletionsAnyContentItem = ChatCompletionsImageContentItem | ChatCompletionsTextContentItem
-ChatCompletionsContentItems = typing.Annotated[list[ChatCompletionsAnyContentItem], annotated_types.MinLen(1)]
+ChatCompletionsContentItemList = typing.Annotated[list[ChatCompletionsAnyContentItem], annotated_types.MinLen(1)]
 
 
 class ChatCompletionsInputMessage(pydantic.BaseModel):
     role: MessageRole
-    content: str | ChatCompletionsContentItems
+    content: str | ChatCompletionsContentItemList
 
 
 class ChatCompletionsRequest(pydantic.BaseModel):
@@ -111,11 +111,11 @@ def _prepare_one_message(one_message: Message) -> ChatCompletionsInputMessage:
     return ChatCompletionsInputMessage(role=one_message.role, content=content_items)
 
 
-def _merge_content_chunks(content_chunks: list[str | ChatCompletionsContentItems]) -> str | ChatCompletionsContentItems:
+def _merge_content_chunks(content_chunks: list[str | ChatCompletionsContentItemList]) -> str | ChatCompletionsContentItemList:
     if all(isinstance(one_content_chunk, str) for one_content_chunk in content_chunks):
         return "\n\n".join(typing.cast(list[str], content_chunks))
 
-    new_content_items: ChatCompletionsContentItems = []
+    new_content_items: ChatCompletionsContentItemList = []
     for one_content_chunk in content_chunks:
         if isinstance(one_content_chunk, str):
             new_content_items.append(ChatCompletionsTextContentItem(text=one_content_chunk))
