@@ -124,6 +124,7 @@ class YandexGPTClient(LLMClient):
             for one_message in messages:
                 if isinstance(one_message.content, list):
                     if len(one_message.content) != 1:
+                        raise 
                         raise ValueError("YandexGPTClient does not support multiple content items per message")
                     message_content = one_message.content[0]
                     if isinstance(message_content, ImageContentItem):

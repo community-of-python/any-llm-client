@@ -98,7 +98,7 @@ class LLMClient(typing.Protocol):
         *,
         temperature: float = LLMConfigValue(attr="temperature"),
         extra: dict[str, typing.Any] | None = None,
-    ) -> str: ...  # raises LLMRequestValidationError, LLMError
+    ) -> str: ...  # raises LLMError, LLMRequestValidationError
 
     @contextlib.asynccontextmanager
     def stream_llm_message_chunks(
@@ -107,7 +107,7 @@ class LLMClient(typing.Protocol):
         *,
         temperature: float = LLMConfigValue(attr="temperature"),
         extra: dict[str, typing.Any] | None = None,
-    ) -> typing.AsyncIterator[typing.AsyncIterable[str]]: ...  # raises LLMRequestValidationError, LLMError
+    ) -> typing.AsyncIterator[typing.AsyncIterable[str]]: ...  # raises LLMError, LLMRequestValidationError
 
     async def __aenter__(self) -> typing_extensions.Self: ...
     async def __aexit__(
@@ -119,12 +119,20 @@ class LLMClient(typing.Protocol):
 
 
 @dataclasses.dataclass
-class LLMError(Exception):
-    response_content: bytes
-
+class AnyLLMClientError(Exception):
     def __str__(self) -> str:
         return self.__repr__().removeprefix(self.__class__.__name__)
 
 
 @dataclasses.dataclass
+class LLMError(AnyLLMClientError):
+    response_content: bytes
+
+
+@dataclasses.dataclass
 class OutOfTokensOrSymbolsError(LLMError): ...
+
+
+@dataclasses.dataclass
+class LLMRequestValidationError(AnyLLMClientError):
+    message: str
