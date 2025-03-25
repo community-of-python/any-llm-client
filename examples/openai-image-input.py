@@ -1,4 +1,4 @@
-"""Install ollama and pull the model to run this script: ollama pull qwen2.5-coder:1.5b."""
+"""Install ollama and pull the model to run this script: `ollama pull llava`."""
 
 import asyncio
 import base64
@@ -8,7 +8,7 @@ import typing
 import any_llm_client
 
 
-config = any_llm_client.OpenAIConfig(url="http://127.0.0.1:11434/v1/chat/completions", model_name="qwen2.5-coder:1.5b")
+config = any_llm_client.OpenAIConfig(url="http://127.0.0.1:11434/v1/chat/completions", model_name="llava")
 
 with pathlib.Path(__file__).parent.joinpath("IMG_4627.JPG").open("rb") as f:
     image_content: typing.Final = f.read()
