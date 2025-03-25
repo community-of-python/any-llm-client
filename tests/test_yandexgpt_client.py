@@ -8,10 +8,24 @@ from polyfactory.factories.pydantic_factory import ModelFactory
 
 import any_llm_client
 from any_llm_client.clients.yandexgpt import YandexGPTAlternative, YandexGPTMessage, YandexGPTResponse, YandexGPTResult
+from any_llm_client.core import ImageContentItem
 from tests.conftest import LLMFuncRequest, LLMFuncRequestFactory, consume_llm_message_chunks
 
 
 class YandexGPTConfigFactory(ModelFactory[any_llm_client.YandexGPTConfig]): ...
+
+
+def func_request_has_image_content_or_list_of_not_one_items(func_request: LLMFuncRequest) -> bool:
+    return isinstance(func_request["messages"], list) and any(
+        (
+            isinstance(message.content, list)
+            and (
+                len(message.content) != 1
+                or any(isinstance(one_content_item, ImageContentItem) for one_content_item in message.content)
+            )
+        )
+        for message in func_request["messages"]
+    )
 
 
 class TestYandexGPTRequestLLMResponse:
@@ -36,9 +50,7 @@ class TestYandexGPTRequestLLMResponse:
                 YandexGPTConfigFactory.build(), transport=httpx.MockTransport(lambda _: response)
             ).request_llm_message(**func_request)
 
-        if isinstance(func_request["messages"], list) and any(
-            isinstance(message.content, list) for message in func_request["messages"]
-        ):
+        if func_request_has_image_content_or_list_of_not_one_items(func_request):
             with pytest.raises(ValueError):
                 await make_request()
         else:
