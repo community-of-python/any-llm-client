@@ -10,7 +10,6 @@ from polyfactory.factories.pydantic_factory import ModelFactory
 
 import any_llm_client
 from any_llm_client.clients.yandexgpt import YandexGPTAlternative, YandexGPTMessage, YandexGPTResponse, YandexGPTResult
-from any_llm_client.core import ImageContentItem, LLMRequestValidationError
 from tests.conftest import LLMFuncRequest, LLMFuncRequestFactory, consume_llm_message_chunks
 
 
@@ -45,7 +44,10 @@ def func_request_has_image_content_or_list_of_not_one_items(func_request: LLMFun
             isinstance(message.content, list)
             and (
                 len(message.content) != 1
-                or any(isinstance(one_content_item, ImageContentItem) for one_content_item in message.content)
+                or any(
+                    isinstance(one_content_item, any_llm_client.ImageContentItem)
+                    for one_content_item in message.content
+                )
             )
         )
         for message in func_request["messages"]
