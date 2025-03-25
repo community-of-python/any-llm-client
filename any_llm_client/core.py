@@ -14,10 +14,23 @@ class MessageRole(str, enum.Enum):
     assistant = "assistant"
 
 
+@pydantic.dataclasses.dataclass
+class TextContentItem:
+    text: str
+
+
+@pydantic.dataclasses.dataclass
+class ImageContentItem:
+    image_url: str
+
+
+ContentItem = TextContentItem | ImageContentItem
+
+
 @pydantic.dataclasses.dataclass(kw_only=True)
 class Message:
     role: MessageRole
-    content: str
+    content: str | list[ContentItem]
 
 
 if typing.TYPE_CHECKING:
@@ -25,26 +38,26 @@ if typing.TYPE_CHECKING:
     @pydantic.dataclasses.dataclass
     class SystemMessage(Message):
         role: typing.Literal[MessageRole.system] = pydantic.Field(MessageRole.system, init=False)
-        content: str
+        content: str | list[ContentItem]
 
     @pydantic.dataclasses.dataclass
     class UserMessage(Message):
         role: typing.Literal[MessageRole.user] = pydantic.Field(MessageRole.user, init=False)
-        content: str
+        content: str | list[ContentItem]
 
     @pydantic.dataclasses.dataclass
     class AssistantMessage(Message):
         role: typing.Literal[MessageRole.assistant] = pydantic.Field(MessageRole.assistant, init=False)
-        content: str
+        content: str | list[ContentItem]
 else:
 
-    def SystemMessage(content: str) -> Message:  # noqa: N802
+    def SystemMessage(content: str | list[ContentItem]) -> Message:  # noqa: N802
         return Message(role=MessageRole.system, content=content)
 
-    def UserMessage(content: str) -> Message:  # noqa: N802
+    def UserMessage(content: str | list[ContentItem]) -> Message:  # noqa: N802
         return Message(role=MessageRole.user, content=content)
 
-    def AssistantMessage(content: str) -> Message:  # noqa: N802
+    def AssistantMessage(content: str | list[ContentItem]) -> Message:  # noqa: N802
         return Message(role=MessageRole.assistant, content=content)
 
 
