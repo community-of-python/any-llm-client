@@ -12,6 +12,7 @@ from any_llm_client.clients.openai import (
     ChatCompletionsNotStreamingResponse,
     ChatCompletionsStreamingEvent,
     OneNotStreamingChoice,
+    OneNotStreamingChoiceMessage,
     OneStreamingChoice,
     OneStreamingChoiceDelta,
 )
@@ -30,7 +31,7 @@ class TestOpenAIRequestLLMResponse:
             json=ChatCompletionsNotStreamingResponse(
                 choices=[
                     OneNotStreamingChoice(
-                        message=ChatCompletionsInputMessage(
+                        message=OneNotStreamingChoiceMessage(
                             role=any_llm_client.MessageRole.assistant, content=expected_result
                         )
                     )

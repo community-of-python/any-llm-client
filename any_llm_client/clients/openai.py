@@ -105,7 +105,7 @@ def _prepare_one_message(one_message: Message) -> ChatCompletionsInputMessage:
     content_items: typing.Final = [
         ChatCompletionsTextContentItem(text=one_content_item.text)
         if isinstance(one_content_item, TextContentItem)
-        else ChatCompletionsImageContentItem(image_url=one_content_item.image_url)
+        else ChatCompletionsImageContentItem(image_url=ChatCompletionsContentUrl(url=one_content_item.image_url))
         for one_content_item in one_message.content
     ]
     return ChatCompletionsInputMessage(role=one_message.role, content=content_items)
