@@ -17,7 +17,7 @@ class MessageRole(str, enum.Enum):
 @pydantic.dataclasses.dataclass(kw_only=True)
 class Message:
     role: MessageRole
-    text: str
+    content: str
 
 
 if typing.TYPE_CHECKING:
@@ -25,27 +25,27 @@ if typing.TYPE_CHECKING:
     @pydantic.dataclasses.dataclass
     class SystemMessage(Message):
         role: typing.Literal[MessageRole.system] = pydantic.Field(MessageRole.system, init=False)
-        text: str
+        content: str
 
     @pydantic.dataclasses.dataclass
     class UserMessage(Message):
         role: typing.Literal[MessageRole.user] = pydantic.Field(MessageRole.user, init=False)
-        text: str
+        content: str
 
     @pydantic.dataclasses.dataclass
     class AssistantMessage(Message):
         role: typing.Literal[MessageRole.assistant] = pydantic.Field(MessageRole.assistant, init=False)
-        text: str
+        content: str
 else:
 
-    def SystemMessage(text: str) -> Message:  # noqa: N802
-        return Message(role=MessageRole.system, text=text)
+    def SystemMessage(content: str) -> Message:  # noqa: N802
+        return Message(role=MessageRole.system, content=content)
 
-    def UserMessage(text: str) -> Message:  # noqa: N802
-        return Message(role=MessageRole.user, text=text)
+    def UserMessage(content: str) -> Message:  # noqa: N802
+        return Message(role=MessageRole.user, content=content)
 
-    def AssistantMessage(text: str) -> Message:  # noqa: N802
-        return Message(role=MessageRole.assistant, text=text)
+    def AssistantMessage(content: str) -> Message:  # noqa: N802
+        return Message(role=MessageRole.assistant, content=content)
 
 
 class LLMConfig(pydantic.BaseModel):

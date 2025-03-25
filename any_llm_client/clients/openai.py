@@ -135,7 +135,7 @@ class OpenAIClient(LLMClient):
     def _prepare_messages(self, messages: str | list[Message]) -> list[ChatCompletionsMessage]:
         messages = [UserMessage(messages)] if isinstance(messages, str) else messages
         initial_messages: typing.Final = (
-            ChatCompletionsMessage(role=one_message.role, content=one_message.text) for one_message in messages
+            ChatCompletionsMessage(role=one_message.role, content=one_message.content) for one_message in messages
         )
         return (
             list(_make_user_assistant_alternate_messages(initial_messages))

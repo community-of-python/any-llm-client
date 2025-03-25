@@ -16,6 +16,7 @@ from any_llm_client.core import (
     LLMConfigValue,
     LLMError,
     Message,
+    MessageRole,
     OutOfTokensOrSymbolsError,
     UserMessage,
 )
@@ -50,15 +51,20 @@ class YandexGPTCompletionOptions(pydantic.BaseModel):
     max_tokens: int = pydantic.Field(gt=0, alias="maxTokens")
 
 
+class YandexGPTMessage(pydantic.BaseModel):
+    role: MessageRole
+    text: str
+
+
 class YandexGPTRequest(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(protected_namespaces=(), extra="allow")
     model_uri: str = pydantic.Field(alias="modelUri")
     completion_options: YandexGPTCompletionOptions = pydantic.Field(alias="completionOptions")
-    messages: list[Message]
+    messages: list[YandexGPTMessage]
 
 
 class YandexGPTAlternative(pydantic.BaseModel):
-    message: Message
+    message: YandexGPTMessage
 
 
 class YandexGPTResult(pydantic.BaseModel):
@@ -119,7 +125,7 @@ class YandexGPTClient(LLMClient):
                 temperature=self.config._resolve_request_temperature(temperature),  # noqa: SLF001
                 maxTokens=self.config.max_tokens,
             ),
-            messages=messages,
+            messages=[YandexGPTMessage(role=one_message.role, text=one_message.content) for one_message in messages],
             **self.config.request_extra | (extra or {}),
         ).model_dump(mode="json", by_alias=True)
 

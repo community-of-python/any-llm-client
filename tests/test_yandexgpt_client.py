@@ -7,7 +7,7 @@ import pytest
 from polyfactory.factories.pydantic_factory import ModelFactory
 
 import any_llm_client
-from any_llm_client.clients.yandexgpt import YandexGPTAlternative, YandexGPTResponse, YandexGPTResult
+from any_llm_client.clients.yandexgpt import YandexGPTAlternative, YandexGPTMessage, YandexGPTResponse, YandexGPTResult
 from tests.conftest import LLMFuncRequest, LLMFuncRequestFactory, consume_llm_message_chunks
 
 
@@ -22,7 +22,11 @@ class TestYandexGPTRequestLLMResponse:
             200,
             json=YandexGPTResponse(
                 result=YandexGPTResult(
-                    alternatives=[YandexGPTAlternative(message=any_llm_client.AssistantMessage(expected_result))]
+                    alternatives=[
+                        YandexGPTAlternative(
+                            message=YandexGPTMessage(role=any_llm_client.MessageRole.assistant, text=expected_result)
+                        )
+                    ]
                 )
             ).model_dump(mode="json"),
         )
@@ -56,7 +60,10 @@ class TestYandexGPTRequestLLMMessageChunks:
                     result=YandexGPTResult(
                         alternatives=[
                             YandexGPTAlternative(
-                                message=any_llm_client.AssistantMessage("".join(expected_result[: one_index + 1]))
+                                message=YandexGPTMessage(
+                                    role=any_llm_client.MessageRole.assistant,
+                                    text="".join(expected_result[: one_index + 1]),
+                                )
                             )
                         ]
                     )
