@@ -15,6 +15,7 @@ async def main() -> None:
             "Кек, чо как вообще на нарах? Порассуждай как философ.",
         )
         print(llm_response.reasoning_content)
+        print(llm_response.content)
 
 
 asyncio.run(main())
