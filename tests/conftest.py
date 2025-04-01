@@ -10,6 +10,7 @@ from polyfactory.factories import DataclassFactory
 from polyfactory.factories.typed_dict_factory import TypedDictFactory
 
 import any_llm_client
+from any_llm_client.core import LLMResponse
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -37,6 +38,14 @@ class ImageContentItemFactory(DataclassFactory[any_llm_client.ImageContentItem])
 class TextContentItemFactory(DataclassFactory[any_llm_client.TextContentItem]): ...
 
 
+class LLMResponseFactory(DataclassFactory[LLMResponse]): ...
+
+
+@pytest.fixture
+def random_llm_response() -> LLMResponse:
+    return LLMResponseFactory.build()
+
+
 def set_no_temperature(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
     llm_func_request.pop("temperature")
     return llm_func_request
@@ -49,7 +58,7 @@ def set_no_extra(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
 
 def set_message_content_as_image_with_description(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:
     llm_func_request["messages"] = [
-        MessageFactory.build(content=[TextContentItemFactory.build(), ImageContentItemFactory.build()])
+        MessageFactory.build(content=[TextContentItemFactory.build(), ImageContentItemFactory.build()]),
     ]
     return llm_func_request
 
@@ -89,8 +98,10 @@ class LLMFuncRequestFactory(TypedDictFactory[LLMFuncRequest]):
 
 
 async def consume_llm_message_chunks(
-    stream_llm_message_chunks_context_manager: contextlib._AsyncGeneratorContextManager[typing.AsyncIterable[str]],
+    stream_llm_message_chunks_context_manager: contextlib._AsyncGeneratorContextManager[
+        typing.AsyncIterable[LLMResponse]
+    ],
     /,
-) -> list[str]:
+) -> list[LLMResponse]:
     async with stream_llm_message_chunks_context_manager as response_iterable:
         return [one_item async for one_item in response_iterable]

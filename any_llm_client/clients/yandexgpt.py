@@ -17,6 +17,7 @@ from any_llm_client.core import (
     LLMConfigValue,
     LLMError,
     LLMRequestValidationError,
+    LLMResponse,
     Message,
     MessageRole,
     OutOfTokensOrSymbolsError,
@@ -35,10 +36,12 @@ class YandexGPTConfig(LLMConfig):
     else:
         url: pydantic.HttpUrl = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
     auth_header: str = pydantic.Field(  # type: ignore[assignment]
-        default_factory=lambda: os.environ.get(YANDEXGPT_AUTH_HEADER_ENV_NAME), validate_default=True
+        default_factory=lambda: os.environ.get(YANDEXGPT_AUTH_HEADER_ENV_NAME),
+        validate_default=True,
     )
     folder_id: str = pydantic.Field(  # type: ignore[assignment]
-        default_factory=lambda: os.environ.get(YANDEXGPT_FOLDER_ID_ENV_NAME), validate_default=True
+        default_factory=lambda: os.environ.get(YANDEXGPT_FOLDER_ID_ENV_NAME),
+        validate_default=True,
     )
     model_name: str
     model_version: str = "latest"
@@ -126,7 +129,7 @@ class YandexGPTClient(LLMClient):
                 if isinstance(one_message.content, list):
                     if len(one_message.content) != 1:
                         raise LLMRequestValidationError(
-                            "YandexGPTClient does not support multiple content items per message"
+                            "YandexGPTClient does not support multiple content items per message",
                         )
                     message_content = one_message.content[0]
                     if isinstance(message_content, ImageContentItem):
@@ -153,9 +156,12 @@ class YandexGPTClient(LLMClient):
         *,
         temperature: float = LLMConfigValue(attr="temperature"),
         extra: dict[str, typing.Any] | None = None,
-    ) -> str:
+    ) -> LLMResponse:
         payload: typing.Final = self._prepare_payload(
-            messages=messages, temperature=temperature, stream=False, extra=extra
+            messages=messages,
+            temperature=temperature,
+            stream=False,
+            extra=extra,
         )
 
         try:
@@ -167,14 +173,16 @@ class YandexGPTClient(LLMClient):
         except httpx.HTTPStatusError as exception:
             _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
 
-        return YandexGPTResponse.model_validate_json(response.content).result.alternatives[0].message.text
+        return LLMResponse(
+            content=YandexGPTResponse.model_validate_json(response.content).result.alternatives[0].message.text,
+        )
 
-    async def _iter_response_chunks(self, response: httpx.Response) -> typing.AsyncIterable[str]:
+    async def _iter_response_chunks(self, response: httpx.Response) -> typing.AsyncIterable[LLMResponse]:
         previous_cursor = 0
         async for one_line in response.aiter_lines():
             validated_response = YandexGPTResponse.model_validate_json(one_line)
             response_text = validated_response.result.alternatives[0].message.text
-            yield response_text[previous_cursor:]
+            yield LLMResponse(content=response_text[previous_cursor:])
             previous_cursor = len(response_text)
 
     @contextlib.asynccontextmanager
@@ -184,9 +192,12 @@ class YandexGPTClient(LLMClient):
         *,
         temperature: float = LLMConfigValue(attr="temperature"),
         extra: dict[str, typing.Any] | None = None,
-    ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
+    ) -> typing.AsyncIterator[typing.AsyncIterable[LLMResponse]]:
         payload: typing.Final = self._prepare_payload(
-            messages=messages, temperature=temperature, stream=True, extra=extra
+            messages=messages,
+            temperature=temperature,
+            stream=True,
+            extra=extra,
         )
 
         try:

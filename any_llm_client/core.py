@@ -39,6 +39,12 @@ class Message:
     content: str | ContentItemList
 
 
+@pydantic.dataclasses.dataclass
+class LLMResponse:
+    content: str
+    reasoning_content: str | None = None
+
+
 if typing.TYPE_CHECKING:
 
     @pydantic.dataclasses.dataclass
@@ -55,6 +61,7 @@ if typing.TYPE_CHECKING:
     class AssistantMessage(Message):
         role: typing.Literal[MessageRole.assistant] = pydantic.Field(MessageRole.assistant, init=False)
         content: str | ContentItemList
+
 else:
 
     def SystemMessage(content: str | ContentItemList) -> Message:  # noqa: N802
@@ -102,7 +109,7 @@ class LLMClient(typing.Protocol):
         *,
         temperature: float = LLMConfigValue(attr="temperature"),
         extra: dict[str, typing.Any] | None = None,
-    ) -> str: ...  # raises LLMError, LLMRequestValidationError
+    ) -> LLMResponse: ...  # raises LLMError, LLMRequestValidationError
 
     @contextlib.asynccontextmanager
     def stream_llm_message_chunks(
@@ -111,7 +118,7 @@ class LLMClient(typing.Protocol):
         *,
         temperature: float = LLMConfigValue(attr="temperature"),
         extra: dict[str, typing.Any] | None = None,
-    ) -> typing.AsyncIterator[typing.AsyncIterable[str]]: ...  # raises LLMError, LLMRequestValidationError
+    ) -> typing.AsyncIterator[typing.AsyncIterable[LLMResponse]]: ...  # raises LLMError, LLMRequestValidationError
 
     async def __aenter__(self) -> typing_extensions.Self: ...
     async def __aexit__(

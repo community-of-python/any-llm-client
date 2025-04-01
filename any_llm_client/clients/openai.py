@@ -16,6 +16,7 @@ from any_llm_client.core import (
     LLMConfig,
     LLMConfigValue,
     LLMError,
+    LLMResponse,
     Message,
     MessageRole,
     OutOfTokensOrSymbolsError,
@@ -76,6 +77,7 @@ class ChatCompletionsRequest(pydantic.BaseModel):
 class OneStreamingChoiceDelta(pydantic.BaseModel):
     role: typing.Literal[MessageRole.assistant] | None = None
     content: str | None = None
+    reasoning_content: str | None = None
 
 
 class OneStreamingChoice(pydantic.BaseModel):
@@ -89,6 +91,7 @@ class ChatCompletionsStreamingEvent(pydantic.BaseModel):
 class OneNotStreamingChoiceMessage(pydantic.BaseModel):
     role: MessageRole
     content: str
+    reasoning_content: str | None = None
 
 
 class OneNotStreamingChoice(pydantic.BaseModel):
@@ -143,14 +146,16 @@ def _make_user_assistant_alternate_messages(
         else:
             if current_message_content_chunks:
                 yield ChatCompletionsInputMessage(
-                    role=current_message_role, content=_merge_content_chunks(current_message_content_chunks)
+                    role=current_message_role,
+                    content=_merge_content_chunks(current_message_content_chunks),
                 )
             current_message_content_chunks = [one_message.content]
             current_message_role = one_message.role
 
     if current_message_content_chunks:
         yield ChatCompletionsInputMessage(
-            role=current_message_role, content=_merge_content_chunks(current_message_content_chunks)
+            role=current_message_role,
+            content=_merge_content_chunks(current_message_content_chunks),
         )
 
 
@@ -195,7 +200,12 @@ class OpenAIClient(LLMClient):
         )
 
     def _prepare_payload(
-        self, *, messages: str | list[Message], temperature: float, stream: bool, extra: dict[str, typing.Any] | None
+        self,
+        *,
+        messages: str | list[Message],
+        temperature: float,
+        stream: bool,
+        extra: dict[str, typing.Any] | None,
     ) -> dict[str, typing.Any]:
         return ChatCompletionsRequest(
             stream=stream,
@@ -211,9 +221,12 @@ class OpenAIClient(LLMClient):
         *,
         temperature: float = LLMConfigValue(attr="temperature"),
         extra: dict[str, typing.Any] | None = None,
-    ) -> str:
+    ) -> LLMResponse:
         payload: typing.Final = self._prepare_payload(
-            messages=messages, temperature=temperature, stream=False, extra=extra
+            messages=messages,
+            temperature=temperature,
+            stream=False,
+            extra=extra,
         )
         try:
             response: typing.Final = await make_http_request(
@@ -224,18 +237,24 @@ class OpenAIClient(LLMClient):
         except httpx.HTTPStatusError as exception:
             _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
         try:
-            return ChatCompletionsNotStreamingResponse.model_validate_json(response.content).choices[0].message.content
+            validated_message_model: typing.Final = (
+                ChatCompletionsNotStreamingResponse.model_validate_json(response.content).choices[0].message
+            )
+            return LLMResponse(
+                content=validated_message_model.content,
+                reasoning_content=validated_message_model.reasoning_content,
+            )
         finally:
             await response.aclose()
 
-    async def _iter_response_chunks(self, response: httpx.Response) -> typing.AsyncIterable[str]:
+    async def _iter_response_chunks(self, response: httpx.Response) -> typing.AsyncIterable[LLMResponse]:
         async for event in httpx_sse.EventSource(response).aiter_sse():
             if event.data == "[DONE]":
                 break
             validated_response = ChatCompletionsStreamingEvent.model_validate_json(event.data)
-            if not (one_chunk := validated_response.choices[0].delta.content):
+            if not ((validated_delta := validated_response.choices[0].delta) and validated_delta.content):
                 continue
-            yield one_chunk
+            yield LLMResponse(content=validated_delta.content, reasoning_content=validated_delta.reasoning_content)
 
     @contextlib.asynccontextmanager
     async def stream_llm_message_chunks(
@@ -244,9 +263,12 @@ class OpenAIClient(LLMClient):
         *,
         temperature: float = LLMConfigValue(attr="temperature"),
         extra: dict[str, typing.Any] | None = None,
-    ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
+    ) -> typing.AsyncIterator[typing.AsyncIterable[LLMResponse]]:
         payload: typing.Final = self._prepare_payload(
-            messages=messages, temperature=temperature, stream=True, extra=extra
+            messages=messages,
+            temperature=temperature,
+            stream=True,
+            extra=extra,
         )
         try:
             async with make_streaming_http_request(

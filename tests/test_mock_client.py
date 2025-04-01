@@ -21,6 +21,6 @@ async def test_mock_client_request_llm_message_returns_config_value(func_request
 async def test_mock_client_stream_llm_message_chunks_returns_config_value(func_request: LLMFuncRequest) -> None:
     config: typing.Final = MockLLMConfigFactory.build()
     response: typing.Final = await consume_llm_message_chunks(
-        any_llm_client.get_client(config).stream_llm_message_chunks(**func_request)
+        any_llm_client.get_client(config).stream_llm_message_chunks(**func_request),
     )
     assert response == config.stream_messages

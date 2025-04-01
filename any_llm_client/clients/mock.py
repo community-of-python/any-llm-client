@@ -6,12 +6,12 @@ import typing
 import pydantic
 import typing_extensions
 
-from any_llm_client.core import LLMClient, LLMConfig, LLMConfigValue, Message
+from any_llm_client.core import LLMClient, LLMConfig, LLMConfigValue, LLMResponse, Message
 
 
 class MockLLMConfig(LLMConfig):
-    response_message: str = ""
-    stream_messages: list[str] = pydantic.Field([])
+    response_message: LLMResponse = LLMResponse(content="")
+    stream_messages: list[LLMResponse] = pydantic.Field([])
     api_type: typing.Literal["mock"] = "mock"
 
 
@@ -25,10 +25,10 @@ class MockLLMClient(LLMClient):
         *,
         temperature: float = LLMConfigValue(attr="temperature"),  # noqa: ARG002
         extra: dict[str, typing.Any] | None = None,  # noqa: ARG002
-    ) -> str:
+    ) -> LLMResponse:
         return self.config.response_message
 
-    async def _iter_config_stream_messages(self) -> typing.AsyncIterable[str]:
+    async def _iter_config_stream_messages(self) -> typing.AsyncIterable[LLMResponse]:
         for one_message in self.config.stream_messages:
             yield one_message
 
@@ -39,7 +39,7 @@ class MockLLMClient(LLMClient):
         *,
         temperature: float = LLMConfigValue(attr="temperature"),  # noqa: ARG002
         extra: dict[str, typing.Any] | None = None,  # noqa: ARG002
-    ) -> typing.AsyncIterator[typing.AsyncIterable[str]]:
+    ) -> typing.AsyncIterator[typing.AsyncIterable[LLMResponse]]:
         yield self._iter_config_stream_messages()
 
     async def __aenter__(self) -> typing_extensions.Self:
