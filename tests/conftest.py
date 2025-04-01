@@ -3,6 +3,7 @@ import typing
 from functools import reduce
 from itertools import combinations
 
+import faker
 import pytest
 import stamina
 import typing_extensions
@@ -38,12 +39,12 @@ class ImageContentItemFactory(DataclassFactory[any_llm_client.ImageContentItem])
 class TextContentItemFactory(DataclassFactory[any_llm_client.TextContentItem]): ...
 
 
-class LLMResponseFactory(DataclassFactory[LLMResponse]): ...
+class LLMResponseFactory(DataclassFactory[any_llm_client.LLMResponse]): ...
 
 
 @pytest.fixture
-def random_llm_response() -> LLMResponse:
-    return LLMResponseFactory.build()
+def random_llm_response(faker: faker.Faker) -> any_llm_client.LLMResponse:
+    return LLMResponseFactory.build(content=faker.pystr())
 
 
 def set_no_temperature(llm_func_request: LLMFuncRequest) -> LLMFuncRequest:

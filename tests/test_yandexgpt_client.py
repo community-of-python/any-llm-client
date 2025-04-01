@@ -9,7 +9,6 @@ from polyfactory.factories.pydantic_factory import ModelFactory
 
 import any_llm_client
 from any_llm_client.clients.yandexgpt import YandexGPTAlternative, YandexGPTMessage, YandexGPTResponse, YandexGPTResult
-from any_llm_client.core import LLMResponse
 from tests.conftest import LLMFuncRequest, LLMFuncRequestFactory, consume_llm_message_chunks
 
 
@@ -56,7 +55,7 @@ def func_request_has_image_content_or_list_of_not_one_items(func_request: LLMFun
 
 class TestYandexGPTRequestLLMResponse:
     @pytest.mark.parametrize("func_request", LLMFuncRequestFactory.coverage())
-    async def test_ok(self, func_request: LLMFuncRequest, random_llm_response: LLMResponse) -> None:
+    async def test_ok(self, func_request: LLMFuncRequest, random_llm_response: any_llm_client.LLMResponse) -> None:
         response: typing.Final = httpx.Response(
             200,
             json=YandexGPTResponse(
@@ -73,7 +72,7 @@ class TestYandexGPTRequestLLMResponse:
             ).model_dump(mode="json"),
         )
 
-        async def make_request() -> LLMResponse:
+        async def make_request() -> any_llm_client.LLMResponse:
             return await any_llm_client.get_client(
                 YandexGPTConfigFactory.build(),
                 transport=httpx.MockTransport(lambda _: response),
@@ -102,9 +101,10 @@ class TestYandexGPTRequestLLMResponse:
 
 class TestYandexGPTRequestLLMMessageChunks:
     @pytest.mark.parametrize("func_request", LLMFuncRequestFactory.coverage())
-    async def test_ok(self, func_request: LLMFuncRequest, random_llm_response: LLMResponse) -> None:
+    async def test_ok(self, func_request: LLMFuncRequest, random_llm_response: any_llm_client.LLMResponse) -> None:
+        assert random_llm_response.content
         expected_result: typing.Final = [
-            LLMResponse(content="".join(random_llm_response.content[one_index : one_index + 1]))
+            any_llm_client.LLMResponse(content="".join(random_llm_response.content[one_index : one_index + 1]))
             for one_index in range(len(random_llm_response.content))
         ]
         config: typing.Final = YandexGPTConfigFactory.build()
@@ -128,7 +128,7 @@ class TestYandexGPTRequestLLMMessageChunks:
         )
         response: typing.Final = httpx.Response(200, content=response_content)
 
-        async def make_request() -> list[LLMResponse]:
+        async def make_request() -> list[any_llm_client.LLMResponse]:
             return await consume_llm_message_chunks(
                 any_llm_client.get_client(
                     config,

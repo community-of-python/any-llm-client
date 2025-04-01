@@ -252,7 +252,10 @@ class OpenAIClient(LLMClient):
             if event.data == "[DONE]":
                 break
             validated_response = ChatCompletionsStreamingEvent.model_validate_json(event.data)
-            if not ((validated_delta := validated_response.choices[0].delta) and validated_delta.content):
+            if not (
+                (validated_delta := validated_response.choices[0].delta)
+                and (validated_delta.content or validated_delta.reasoning_content)
+            ):
                 continue
             yield LLMResponse(content=validated_delta.content, reasoning_content=validated_delta.reasoning_content)
 

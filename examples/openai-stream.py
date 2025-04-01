@@ -14,7 +14,7 @@ async def main() -> None:
         client.stream_llm_message_chunks("Кек, чо как вообще на нарах?") as message_chunks,
     ):
         async for chunk in message_chunks:
-            print(chunk, end="", flush=True)
+            print(chunk.content, end="", flush=True)
 
 
 asyncio.run(main())

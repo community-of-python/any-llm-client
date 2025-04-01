@@ -17,7 +17,7 @@ message: typing.Final = any_llm_client.UserMessage(
     content=[
         any_llm_client.TextContentItem("What's on the image?"),
         any_llm_client.ImageContentItem(f"data:image/jpeg;base64,{base64.b64encode(image_content).decode('utf-8')}"),
-    ]
+    ],
 )
 
 
@@ -27,7 +27,7 @@ async def main() -> None:
         client.stream_llm_message_chunks(messages=[message]) as message_chunks,
     ):
         async for chunk in message_chunks:
-            print(chunk, end="", flush=True)
+            print(chunk.content, end="", flush=True)
 
 
 asyncio.run(main())

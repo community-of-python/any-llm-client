@@ -41,7 +41,7 @@ class Message:
 
 @pydantic.dataclasses.dataclass
 class LLMResponse:
-    content: str
+    content: str | None = None
     reasoning_content: str | None = None
 
 

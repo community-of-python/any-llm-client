@@ -17,7 +17,6 @@ from any_llm_client.clients.openai import (
     OneStreamingChoice,
     OneStreamingChoiceDelta,
 )
-from any_llm_client.core import LLMResponse
 from tests.conftest import LLMFuncRequest, LLMFuncRequestFactory, consume_llm_message_chunks
 
 
@@ -26,7 +25,7 @@ class OpenAIConfigFactory(ModelFactory[any_llm_client.OpenAIConfig]): ...
 
 class TestOpenAIRequestLLMResponse:
     @pytest.mark.parametrize("func_request", LLMFuncRequestFactory.coverage())
-    async def test_ok(self, func_request: LLMFuncRequest, random_llm_response: LLMResponse) -> None:
+    async def test_ok(self, func_request: LLMFuncRequest, random_llm_response: any_llm_client.LLMResponse) -> None:
         response: typing.Final = httpx.Response(
             200,
             json=ChatCompletionsNotStreamingResponse(
@@ -78,12 +77,12 @@ class TestOpenAIRequestLLMMessageChunks:
             OneStreamingChoiceDelta(),
         ]
         expected_result: typing.Final = [
-            LLMResponse("H"),
-            LLMResponse("i"),
-            LLMResponse(" t"),
-            LLMResponse("here"),
-            LLMResponse(". How is you"),
-            LLMResponse("r day?"),
+            any_llm_client.LLMResponse("H"),
+            any_llm_client.LLMResponse("i"),
+            any_llm_client.LLMResponse(" t"),
+            any_llm_client.LLMResponse("here"),
+            any_llm_client.LLMResponse(". How is you"),
+            any_llm_client.LLMResponse("r day?"),
         ]
         config: typing.Final = OpenAIConfigFactory.build()
         response_content: typing.Final = (

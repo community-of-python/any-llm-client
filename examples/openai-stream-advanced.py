@@ -20,7 +20,7 @@ async def main() -> None:
         ) as message_chunks,
     ):
         async for chunk in message_chunks:
-            print(chunk, end="", flush=True)
+            print(chunk.content, end="", flush=True)
 
 
 asyncio.run(main())
