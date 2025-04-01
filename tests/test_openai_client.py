@@ -25,26 +25,28 @@ class OpenAIConfigFactory(ModelFactory[any_llm_client.OpenAIConfig]): ...
 
 class TestOpenAIRequestLLMResponse:
     @pytest.mark.parametrize("func_request", LLMFuncRequestFactory.coverage())
-    async def test_ok(self, faker: faker.Faker, func_request: LLMFuncRequest) -> None:
-        expected_result: typing.Final = faker.pystr()
+    async def test_ok(self, func_request: LLMFuncRequest, random_llm_response: any_llm_client.LLMResponse) -> None:
         response: typing.Final = httpx.Response(
             200,
             json=ChatCompletionsNotStreamingResponse(
                 choices=[
                     OneNotStreamingChoice(
                         message=OneNotStreamingChoiceMessage(
-                            role=any_llm_client.MessageRole.assistant, content=expected_result
-                        )
-                    )
-                ]
+                            role=any_llm_client.MessageRole.assistant,
+                            content=random_llm_response.content,
+                            reasoning_content=random_llm_response.reasoning_content,
+                        ),
+                    ),
+                ],
             ).model_dump(mode="json"),
         )
 
         result: typing.Final = await any_llm_client.get_client(
-            OpenAIConfigFactory.build(), transport=httpx.MockTransport(lambda _: response)
+            OpenAIConfigFactory.build(),
+            transport=httpx.MockTransport(lambda _: response),
         ).request_llm_message(**func_request)
 
-        assert result == expected_result
+        assert result == random_llm_response
 
     async def test_fails_without_alternatives(self) -> None:
         response: typing.Final = httpx.Response(
@@ -52,7 +54,8 @@ class TestOpenAIRequestLLMResponse:
             json=ChatCompletionsNotStreamingResponse.model_construct(choices=[]).model_dump(mode="json"),
         )
         client: typing.Final = any_llm_client.get_client(
-            OpenAIConfigFactory.build(), transport=httpx.MockTransport(lambda _: response)
+            OpenAIConfigFactory.build(),
+            transport=httpx.MockTransport(lambda _: response),
         )
 
         with pytest.raises(pydantic.ValidationError):
@@ -74,12 +77,12 @@ class TestOpenAIRequestLLMMessageChunks:
             OneStreamingChoiceDelta(),
         ]
         expected_result: typing.Final = [
-            "H",
-            "i",
-            " t",
-            "here",
-            ". How is you",
-            "r day?",
+            any_llm_client.LLMResponse("H"),
+            any_llm_client.LLMResponse("i"),
+            any_llm_client.LLMResponse(" t"),
+            any_llm_client.LLMResponse("here"),
+            any_llm_client.LLMResponse(". How is you"),
+            any_llm_client.LLMResponse("r day?"),
         ]
         config: typing.Final = OpenAIConfigFactory.build()
         response_content: typing.Final = (
@@ -91,7 +94,9 @@ class TestOpenAIRequestLLMMessageChunks:
             + f"\n\ndata: [DONE]\n\ndata: {faker.pystr()}\n\n"
         )
         response: typing.Final = httpx.Response(
-            200, headers={"Content-Type": "text/event-stream"}, content=response_content
+            200,
+            headers={"Content-Type": "text/event-stream"},
+            content=response_content,
         )
         client: typing.Final = any_llm_client.get_client(config, transport=httpx.MockTransport(lambda _: response))
 
@@ -104,10 +109,13 @@ class TestOpenAIRequestLLMMessageChunks:
             f"data: {ChatCompletionsStreamingEvent.model_construct(choices=[]).model_dump_json()}\n\n"
         )
         response: typing.Final = httpx.Response(
-            200, headers={"Content-Type": "text/event-stream"}, content=response_content
+            200,
+            headers={"Content-Type": "text/event-stream"},
+            content=response_content,
         )
         client: typing.Final = any_llm_client.get_client(
-            OpenAIConfigFactory.build(), transport=httpx.MockTransport(lambda _: response)
+            OpenAIConfigFactory.build(),
+            transport=httpx.MockTransport(lambda _: response),
         )
 
         with pytest.raises(pydantic.ValidationError):
@@ -119,7 +127,8 @@ class TestOpenAILLMErrors:
     @pytest.mark.parametrize("status_code", [400, 500])
     async def test_fails_with_unknown_error(self, stream: bool, status_code: int) -> None:
         client: typing.Final = any_llm_client.get_client(
-            OpenAIConfigFactory.build(), transport=httpx.MockTransport(lambda _: httpx.Response(status_code))
+            OpenAIConfigFactory.build(),
+            transport=httpx.MockTransport(lambda _: httpx.Response(status_code)),
         )
 
         coroutine: typing.Final = (
@@ -143,7 +152,8 @@ class TestOpenAILLMErrors:
     async def test_fails_with_out_of_tokens_error(self, stream: bool, content: bytes | None) -> None:
         response: typing.Final = httpx.Response(400, content=content)
         client: typing.Final = any_llm_client.get_client(
-            OpenAIConfigFactory.build(), transport=httpx.MockTransport(lambda _: response)
+            OpenAIConfigFactory.build(),
+            transport=httpx.MockTransport(lambda _: response),
         )
 
         coroutine: typing.Final = (
@@ -187,7 +197,8 @@ class TestOpenAIMessageAlternation:
                 [
                     ChatCompletionsInputMessage(role=any_llm_client.MessageRole.user, content="Hi there"),
                     ChatCompletionsInputMessage(
-                        role=any_llm_client.MessageRole.assistant, content="Hi! How can I help you?"
+                        role=any_llm_client.MessageRole.assistant,
+                        content="Hi! How can I help you?",
                     ),
                 ],
             ),
@@ -200,7 +211,8 @@ class TestOpenAIMessageAlternation:
                 [
                     ChatCompletionsInputMessage(role=any_llm_client.MessageRole.user, content="Hi there"),
                     ChatCompletionsInputMessage(
-                        role=any_llm_client.MessageRole.assistant, content="Hi! How can I help you?"
+                        role=any_llm_client.MessageRole.assistant,
+                        content="Hi! How can I help you?",
                     ),
                 ],
             ),
@@ -230,7 +242,8 @@ class TestOpenAIMessageAlternation:
                         content="Hi!\n\nI'm your answer to everything.\n\nHow can I help you?",
                     ),
                     ChatCompletionsInputMessage(
-                        role=any_llm_client.MessageRole.user, content="Hi there\n\nWhy is the sky blue?"
+                        role=any_llm_client.MessageRole.user,
+                        content="Hi there\n\nWhy is the sky blue?",
                     ),
                     ChatCompletionsInputMessage(role=any_llm_client.MessageRole.assistant, content="Well..."),
                     ChatCompletionsInputMessage(role=any_llm_client.MessageRole.user, content="Hmmm..."),
@@ -243,7 +256,7 @@ class TestOpenAIMessageAlternation:
                         [
                             any_llm_client.TextContentItem("Hi there"),
                             any_llm_client.TextContentItem("Why is the sky blue?"),
-                        ]
+                        ],
                     ),
                 ],
                 [
@@ -254,7 +267,7 @@ class TestOpenAIMessageAlternation:
                             ChatCompletionsTextContentItem(text="Hi there"),
                             ChatCompletionsTextContentItem(text="Why is the sky blue?"),
                         ],
-                    )
+                    ),
                 ],
             ),
             (
@@ -280,19 +293,21 @@ class TestOpenAIMessageAlternation:
         ],
     )
     def test_with_alternation(
-        self, messages: list[any_llm_client.Message], expected_result: list[ChatCompletionsInputMessage]
+        self,
+        messages: list[any_llm_client.Message],
+        expected_result: list[ChatCompletionsInputMessage],
     ) -> None:
         client: typing.Final = any_llm_client.OpenAIClient(
-            OpenAIConfigFactory.build(force_user_assistant_message_alternation=True)
+            OpenAIConfigFactory.build(force_user_assistant_message_alternation=True),
         )
         assert client._prepare_messages(messages) == expected_result  # noqa: SLF001
 
     def test_without_alternation(self) -> None:
         client: typing.Final = any_llm_client.OpenAIClient(
-            OpenAIConfigFactory.build(force_user_assistant_message_alternation=False)
+            OpenAIConfigFactory.build(force_user_assistant_message_alternation=False),
         )
         assert client._prepare_messages(  # noqa: SLF001
-            [any_llm_client.SystemMessage("Be nice"), any_llm_client.UserMessage("Hi there")]
+            [any_llm_client.SystemMessage("Be nice"), any_llm_client.UserMessage("Hi there")],
         ) == [
             ChatCompletionsInputMessage(role=any_llm_client.MessageRole.system, content="Be nice"),
             ChatCompletionsInputMessage(role=any_llm_client.MessageRole.user, content="Hi there"),

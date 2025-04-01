@@ -93,6 +93,20 @@ async with (
     ...
 ```
 
+### Reasoning models
+
+Today you can access openapi-like reasoning models and retrieve their reasoning content:
+
+```python
+async def main() -> None:
+    async with any_llm_client.get_client(config) as client:
+        llm_response = await client.request_llm_message("Кек, чо как вообще на нарах?")
+        print(f"Just a regular LLM response content: {llm_response.content}")
+        print(f"LLM reasoning response content: {llm_response.reasoning_content}")
+
+    ...
+```
+
 ### Other
 
 #### Mock client
@@ -165,11 +179,11 @@ async with any_llm_client.OpenAIClient(config, ...) as client:
 #### Errors
 
 `any_llm_client.LLMClient.request_llm_message()` and `any_llm_client.LLMClient.stream_llm_message_chunks()` will raise:
+
 - `any_llm_client.LLMError` or `any_llm_client.OutOfTokensOrSymbolsError` when the LLM API responds with a failed HTTP status,
 - `any_llm_client.LLMRequestValidationError` when images are passed to YandexGPT client.
 
 #### Timeouts, proxy & other HTTP settings
-
 
 Pass custom [HTTPX](https://www.python-httpx.org) kwargs to `any_llm_client.get_client()`:
 
@@ -205,7 +219,6 @@ await client.request_llm_message("Кек, чо как вообще на нара
 ```
 
 The `extra` parameter is united with `request_extra` in OpenAIConfig
-
 
 #### Passing images
 
