@@ -182,6 +182,9 @@ async with any_llm_client.OpenAIClient(config, ...) as client:
 
 - `any_llm_client.LLMError` or `any_llm_client.OutOfTokensOrSymbolsError` when the LLM API responds with a failed HTTP status,
 - `any_llm_client.LLMRequestValidationError` when images are passed to YandexGPT client.
+- `any_llm_client.LLMResponseValidationError` when invalid response come from LLM API (reraised from `pydantic.ValidationError`).
+
+All these exceptions inherit from the base class `any_llm_client.AnyLLMClientError`.
 
 #### Timeouts, proxy & other HTTP settings
 
