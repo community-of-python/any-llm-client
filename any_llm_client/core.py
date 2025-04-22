@@ -147,3 +147,9 @@ class OutOfTokensOrSymbolsError(LLMError): ...
 @dataclasses.dataclass
 class LLMRequestValidationError(AnyLLMClientError):
     message: str
+
+
+@dataclasses.dataclass
+class LLMResponseValidationError(AnyLLMClientError):
+    response_content: bytes
+    original_error: pydantic.ValidationError

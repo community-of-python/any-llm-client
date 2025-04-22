@@ -3,6 +3,7 @@ from any_llm_client.clients.openai import OpenAIClient, OpenAIConfig
 from any_llm_client.clients.yandexgpt import YandexGPTClient, YandexGPTConfig
 from any_llm_client.core import (
     AnyContentItem,
+    AnyLLMClientError,
     AssistantMessage,
     ContentItemList,
     ImageContentItem,
@@ -11,6 +12,7 @@ from any_llm_client.core import (
     LLMError,
     LLMRequestValidationError,
     LLMResponse,
+    LLMResponseValidationError,
     Message,
     MessageRole,
     OutOfTokensOrSymbolsError,
@@ -24,6 +26,7 @@ from any_llm_client.retry import RequestRetryConfig
 
 __all__ = [
     "AnyContentItem",
+    "AnyLLMClientError",
     "AnyLLMConfig",
     "AssistantMessage",
     "ContentItemList",
@@ -33,6 +36,7 @@ __all__ = [
     "LLMError",
     "LLMRequestValidationError",
     "LLMResponse",
+    "LLMResponseValidationError",
     "Message",
     "MessageRole",
     "MockLLMClient",
