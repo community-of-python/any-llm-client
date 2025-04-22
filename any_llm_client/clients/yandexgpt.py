@@ -190,7 +190,7 @@ class YandexGPTClient(LLMClient):
                 validated_response = YandexGPTResponse.model_validate_json(one_line)
             except pydantic.ValidationError as validation_error:
                 raise LLMResponseValidationError(
-                    response_content=response.content, original_error=validation_error
+                    response_content=one_line.encode(), original_error=validation_error
                 ) from validation_error
 
             response_text = validated_response.result.alternatives[0].message.text

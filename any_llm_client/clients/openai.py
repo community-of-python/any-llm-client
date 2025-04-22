@@ -263,7 +263,7 @@ class OpenAIClient(LLMClient):
                 validated_response = ChatCompletionsStreamingEvent.model_validate_json(event.data)
             except pydantic.ValidationError as validation_error:
                 raise LLMResponseValidationError(
-                    response_content=response.content, original_error=validation_error
+                    response_content=event.data.encode(), original_error=validation_error
                 ) from validation_error
 
             if not (
