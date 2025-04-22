@@ -18,6 +18,7 @@ from any_llm_client.core import (
     LLMError,
     LLMRequestValidationError,
     LLMResponse,
+    LLMResponseValidationError,
     Message,
     MessageRole,
     OutOfTokensOrSymbolsError,
@@ -173,14 +174,25 @@ class YandexGPTClient(LLMClient):
         except httpx.HTTPStatusError as exception:
             _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
 
-        return LLMResponse(
-            content=YandexGPTResponse.model_validate_json(response.content).result.alternatives[0].message.text,
-        )
+        try:
+            validated_response: typing.Final = YandexGPTResponse.model_validate_json(response.content)
+        except pydantic.ValidationError as validation_error:
+            raise LLMResponseValidationError(
+                response_content=response.content, original_error=validation_error
+            ) from validation_error
+
+        return LLMResponse(content=validated_response.result.alternatives[0].message.text)
 
     async def _iter_response_chunks(self, response: httpx.Response) -> typing.AsyncIterable[LLMResponse]:
         previous_cursor = 0
         async for one_line in response.aiter_lines():
-            validated_response = YandexGPTResponse.model_validate_json(one_line)
+            try:
+                validated_response = YandexGPTResponse.model_validate_json(one_line)
+            except pydantic.ValidationError as validation_error:
+                raise LLMResponseValidationError(
+                    response_content=response.content, original_error=validation_error
+                ) from validation_error
+
             response_text = validated_response.result.alternatives[0].message.text
             yield LLMResponse(content=response_text[previous_cursor:])
             previous_cursor = len(response_text)

@@ -27,7 +27,7 @@ dynamic = ["version"]
 dev = [
     "anyio",
     "faker",
-    "polyfactory",
+    "polyfactory==2.20.0",
     "pydantic-settings",
     "pytest-cov",
     "pytest",

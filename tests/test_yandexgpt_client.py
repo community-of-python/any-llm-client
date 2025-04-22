@@ -9,6 +9,7 @@ from polyfactory.factories.pydantic_factory import ModelFactory
 
 import any_llm_client
 from any_llm_client.clients.yandexgpt import YandexGPTAlternative, YandexGPTMessage, YandexGPTResponse, YandexGPTResult
+from any_llm_client.core import LLMResponseValidationError
 from tests.conftest import LLMFuncRequest, LLMFuncRequestFactory, consume_llm_message_chunks
 
 
@@ -95,7 +96,7 @@ class TestYandexGPTRequestLLMResponse:
             transport=httpx.MockTransport(lambda _: response),
         )
 
-        with pytest.raises(pydantic.ValidationError):
+        with pytest.raises(LLMResponseValidationError):
             await client.request_llm_message(**LLMFuncRequestWithTextContentMessagesFactory.build())
 
 
@@ -153,7 +154,7 @@ class TestYandexGPTRequestLLMMessageChunks:
             transport=httpx.MockTransport(lambda _: response),
         )
 
-        with pytest.raises(pydantic.ValidationError):
+        with pytest.raises(LLMResponseValidationError):
             await consume_llm_message_chunks(
                 client.stream_llm_message_chunks(**LLMFuncRequestWithTextContentMessagesFactory.build()),
             )

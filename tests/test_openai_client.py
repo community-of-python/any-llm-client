@@ -2,7 +2,6 @@ import typing
 
 import faker
 import httpx
-import pydantic
 import pytest
 from polyfactory.factories.pydantic_factory import ModelFactory
 
@@ -17,6 +16,7 @@ from any_llm_client.clients.openai import (
     OneStreamingChoice,
     OneStreamingChoiceDelta,
 )
+from any_llm_client.core import LLMResponseValidationError
 from tests.conftest import LLMFuncRequest, LLMFuncRequestFactory, consume_llm_message_chunks
 
 
@@ -58,7 +58,7 @@ class TestOpenAIRequestLLMResponse:
             transport=httpx.MockTransport(lambda _: response),
         )
 
-        with pytest.raises(pydantic.ValidationError):
+        with pytest.raises(LLMResponseValidationError):
             await client.request_llm_message(**LLMFuncRequestFactory.build())
 
 
@@ -118,7 +118,7 @@ class TestOpenAIRequestLLMMessageChunks:
             transport=httpx.MockTransport(lambda _: response),
         )
 
-        with pytest.raises(pydantic.ValidationError):
+        with pytest.raises(LLMResponseValidationError):
             await consume_llm_message_chunks(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
 
 

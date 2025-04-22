@@ -17,6 +17,7 @@ from any_llm_client.core import (
     LLMConfigValue,
     LLMError,
     LLMResponse,
+    LLMResponseValidationError,
     Message,
     MessageRole,
     OutOfTokensOrSymbolsError,
@@ -236,27 +237,41 @@ class OpenAIClient(LLMClient):
             )
         except httpx.HTTPStatusError as exception:
             _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
+
         try:
             validated_message_model: typing.Final = (
                 ChatCompletionsNotStreamingResponse.model_validate_json(response.content).choices[0].message
             )
-            return LLMResponse(
-                content=validated_message_model.content,
-                reasoning_content=validated_message_model.reasoning_content,
-            )
+        except pydantic.ValidationError as validation_error:
+            raise LLMResponseValidationError(
+                response_content=response.content, original_error=validation_error
+            ) from validation_error
         finally:
             await response.aclose()
+
+        return LLMResponse(
+            content=validated_message_model.content,
+            reasoning_content=validated_message_model.reasoning_content,
+        )
 
     async def _iter_response_chunks(self, response: httpx.Response) -> typing.AsyncIterable[LLMResponse]:
         async for event in httpx_sse.EventSource(response).aiter_sse():
             if event.data == "[DONE]":
                 break
-            validated_response = ChatCompletionsStreamingEvent.model_validate_json(event.data)
+
+            try:
+                validated_response = ChatCompletionsStreamingEvent.model_validate_json(event.data)
+            except pydantic.ValidationError as validation_error:
+                raise LLMResponseValidationError(
+                    response_content=response.content, original_error=validation_error
+                ) from validation_error
+
             if not (
                 (validated_delta := validated_response.choices[0].delta)
                 and (validated_delta.content or validated_delta.reasoning_content)
             ):
                 continue
+
             yield LLMResponse(content=validated_delta.content, reasoning_content=validated_delta.reasoning_content)
 
     @contextlib.asynccontextmanager
