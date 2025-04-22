@@ -149,8 +149,36 @@ class TestOpenAILLMErrors:
             b'{"object":"error","message":"This model\'s maximum context length is 16384 tokens. However, you requested 100000 tokens in the messages, Please reduce the length of the messages.","type":"BadRequestError","param":null,"code":400}',  # noqa: E501
         ],
     )
-    async def test_fails_with_out_of_tokens_error(self, stream: bool, content: bytes | None) -> None:
+    async def test_fails_with_out_of_tokens_error_on_status(self, stream: bool, content: bytes) -> None:
         response: typing.Final = httpx.Response(400, content=content)
+        client: typing.Final = any_llm_client.get_client(
+            OpenAIConfigFactory.build(),
+            transport=httpx.MockTransport(lambda _: response),
+        )
+
+        coroutine: typing.Final = (
+            consume_llm_message_chunks(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
+            if stream
+            else client.request_llm_message(**LLMFuncRequestFactory.build())
+        )
+
+        with pytest.raises(any_llm_client.OutOfTokensOrSymbolsError):
+            await coroutine
+
+    @pytest.mark.parametrize("stream", [True, False])
+    @pytest.mark.parametrize(
+        "content",
+        [
+            b'{"error": {"object": "error", "message": "The prompt (total length 6287) is too long to fit into the model (context length 4096). Make sure that `max_model_len` is no smaller than the number of text tokens plus multimodal tokens. For image inputs, the number of image tokens depends on the number of images, and possibly their aspect ratios as well.", "type": "BadRequestError", "param": null, "code": 400}}\n',  # noqa: E501
+            b'{"object": "error", "message": "The prompt (total length 43431) is too long to fit into the model (context length 8192). Make sure that `max_model_len` is no smaller than the number of text tokens plus multimodal tokens. For image inputs, the number of image tokens depends on the number of images, and possibly their aspect ratios as well.", "type": "BadRequestError", "param": null, "code": 400}\n',  # noqa: E501
+        ],
+    )
+    async def test_fails_with_out_of_tokens_error_on_validation(self, stream: bool, content: bytes) -> None:
+        response: typing.Final = httpx.Response(
+            200,
+            content=f"data: {content.decode()}\n\n" if stream else content,
+            headers={"Content-Type": "text/event-stream"} if stream else None,
+        )
         client: typing.Final = any_llm_client.get_client(
             OpenAIConfigFactory.build(),
             transport=httpx.MockTransport(lambda _: response),

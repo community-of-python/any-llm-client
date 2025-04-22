@@ -166,6 +166,12 @@ def _handle_status_error(*, status_code: int, content: bytes) -> typing.NoReturn
     raise LLMError(response_content=content)
 
 
+def _handle_validation_error(*, content: bytes, original_error: pydantic.ValidationError) -> typing.NoReturn:
+    if b"is too long to fit into the model" in content:  # vLLM
+        raise OutOfTokensOrSymbolsError(response_content=content)
+    raise LLMResponseValidationError(response_content=content, original_error=original_error)
+
+
 @dataclasses.dataclass(slots=True, init=False)
 class OpenAIClient(LLMClient):
     config: OpenAIConfig
@@ -243,9 +249,7 @@ class OpenAIClient(LLMClient):
                 ChatCompletionsNotStreamingResponse.model_validate_json(response.content).choices[0].message
             )
         except pydantic.ValidationError as validation_error:
-            raise LLMResponseValidationError(
-                response_content=response.content, original_error=validation_error
-            ) from validation_error
+            _handle_validation_error(content=response.content, original_error=validation_error)
         finally:
             await response.aclose()
 
@@ -262,9 +266,7 @@ class OpenAIClient(LLMClient):
             try:
                 validated_response = ChatCompletionsStreamingEvent.model_validate_json(event.data)
             except pydantic.ValidationError as validation_error:
-                raise LLMResponseValidationError(
-                    response_content=event.data.encode(), original_error=validation_error
-                ) from validation_error
+                _handle_validation_error(content=event.data.encode(), original_error=validation_error)
 
             if not (
                 (validated_delta := validated_response.choices[0].delta)
