@@ -245,7 +245,6 @@ class OpenAIClient(LLMClient):
             _handle_status_error(status_code=exception.response.status_code, content=exception.response.content)
 
         try:
-            print(response.content)
             validated_message_model: typing.Final = (
                 ChatCompletionsNotStreamingResponse.model_validate_json(response.content).choices[0].message
             )
