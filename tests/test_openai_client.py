@@ -91,6 +91,7 @@ class TestOpenAIRequestLLMMessageChunks:
                 + ChatCompletionsStreamingEvent(choices=[OneStreamingChoice(delta=one_message)]).model_dump_json()
                 for one_message in generated_messages
             )
+            + f"\n\ndata: {ChatCompletionsStreamingEvent(choices=[]).model_dump_json()}"
             + f"\n\ndata: [DONE]\n\ndata: {faker.pystr()}\n\n"
         )
         response: typing.Final = httpx.Response(
@@ -103,23 +104,6 @@ class TestOpenAIRequestLLMMessageChunks:
         result: typing.Final = await consume_llm_message_chunks(client.stream_llm_message_chunks(**func_request))
 
         assert result == expected_result
-
-    async def test_fails_without_alternatives(self) -> None:
-        response_content: typing.Final = (
-            f"data: {ChatCompletionsStreamingEvent.model_construct(choices=[]).model_dump_json()}\n\n"
-        )
-        response: typing.Final = httpx.Response(
-            200,
-            headers={"Content-Type": "text/event-stream"},
-            content=response_content,
-        )
-        client: typing.Final = any_llm_client.get_client(
-            OpenAIConfigFactory.build(),
-            transport=httpx.MockTransport(lambda _: response),
-        )
-
-        with pytest.raises(LLMResponseValidationError):
-            await consume_llm_message_chunks(client.stream_llm_message_chunks(**LLMFuncRequestFactory.build()))
 
 
 class TestOpenAILLMErrors:

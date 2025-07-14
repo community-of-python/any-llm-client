@@ -86,7 +86,7 @@ class OneStreamingChoice(pydantic.BaseModel):
 
 
 class ChatCompletionsStreamingEvent(pydantic.BaseModel):
-    choices: typing.Annotated[list[OneStreamingChoice], annotated_types.MinLen(1)]
+    choices: list[OneStreamingChoice]
 
 
 class OneNotStreamingChoiceMessage(pydantic.BaseModel):
@@ -269,7 +269,8 @@ class OpenAIClient(LLMClient):
                 _handle_validation_error(content=event.data.encode(), original_error=validation_error)
 
             if not (
-                (validated_delta := validated_response.choices[0].delta)
+                (validated_choices := validated_response.choices)
+                and (validated_delta := validated_choices[0].delta)
                 and (validated_delta.content or validated_delta.reasoning_content)
             ):
                 continue
